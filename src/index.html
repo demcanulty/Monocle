@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="styles.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Monocle</title>
+    <script type="module" src="/main.js" defer></script>
+  </head>
+
+  <body>
+    <div id="welcome">
+      <div class="welcome-inner">
+        <div class="welcome-icon">&#9678;</div>
+        <h1>Monocle</h1>
+        <p class="tagline">Markdown viewer with live reload</p>
+        <button id="open-btn">Open File</button>
+        <p class="hint">Drop a .md file here &middot; &#8984;O to open</p>
+      </div>
+    </div>
+
+    <div id="toolbar">
+      <span id="file-path"></span>
+    </div>
+
+    <article id="content"></article>
+
+    <div id="drop-overlay">
+      <div class="drop-message">Drop to open</div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,22 @@
+[package]
+name = "monocle"
+version = "0.1.0"
+description = "A standalone markdown viewer with live reload"
+authors = ["Daniel McAnulty"]
+edition = "2021"
+
+[lib]
+name = "monocle_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+notify = "7"
+pulldown-cmark = "0.12"
+rfd = "0.15"
+dirs = "6"

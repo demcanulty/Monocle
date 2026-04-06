@@ -1,0 +1,365 @@
+/* ── Variables ── */
+:root {
+  --bg: #ffffff;
+  --text: #24292f;
+  --text-secondary: #656d76;
+  --border: #d0d7de;
+  --code-bg: #f6f8fa;
+  --code-text: #24292f;
+  --link: #0969da;
+  --blockquote-border: #d0d7de;
+  --blockquote-text: #656d76;
+  --heading-border: #d8dee4;
+  --table-border: #d0d7de;
+  --table-alt-bg: #f6f8fa;
+  --toolbar-bg: rgba(246, 246, 246, 0.85);
+  --welcome-bg: #f6f8fa;
+  --btn-bg: #24292f;
+  --btn-text: #ffffff;
+  --drop-bg: rgba(9, 105, 218, 0.08);
+  --drop-border: #0969da;
+  --error-bg: #fff0f0;
+  --error-text: #cf222e;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0d1117;
+    --text: #e6edf3;
+    --text-secondary: #8b949e;
+    --border: #30363d;
+    --code-bg: #161b22;
+    --code-text: #e6edf3;
+    --link: #58a6ff;
+    --blockquote-border: #30363d;
+    --blockquote-text: #8b949e;
+    --heading-border: #21262d;
+    --table-border: #30363d;
+    --table-alt-bg: #161b22;
+    --toolbar-bg: rgba(22, 27, 34, 0.85);
+    --welcome-bg: #161b22;
+    --btn-bg: #e6edf3;
+    --btn-text: #0d1117;
+    --drop-bg: rgba(88, 166, 255, 0.08);
+    --drop-border: #58a6ff;
+    --error-bg: #3d1117;
+    --error-text: #f85149;
+  }
+}
+
+/* ── Reset ── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans",
+    Helvetica, Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Welcome Screen ── */
+#welcome {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.welcome-inner {
+  text-align: center;
+  padding: 3rem;
+}
+
+.welcome-icon {
+  font-size: 4rem;
+  opacity: 0.25;
+  margin-bottom: 0.5rem;
+}
+
+#welcome h1 {
+  font-size: 2rem;
+  font-weight: 600;
+  margin: 0 0 0.25rem;
+  letter-spacing: -0.02em;
+}
+
+.tagline {
+  color: var(--text-secondary);
+  margin: 0 0 2rem;
+  font-size: 1rem;
+}
+
+#open-btn {
+  display: inline-block;
+  padding: 0.6rem 1.8rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--btn-text);
+  background: var(--btn-bg);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+#open-btn:hover {
+  opacity: 0.85;
+}
+
+#open-btn:active {
+  opacity: 0.7;
+}
+
+.hint {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  margin-top: 1.2rem;
+  opacity: 0.7;
+}
+
+/* ── Toolbar ── */
+#toolbar {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 32px;
+  padding: 0 16px;
+  align-items: center;
+  background: var(--toolbar-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  z-index: 100;
+  -webkit-app-region: drag;
+}
+
+#file-path {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  direction: rtl;
+  text-align: left;
+  -webkit-app-region: no-drag;
+}
+
+/* ── Markdown Content ── */
+#content {
+  display: none;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 52px 32px 64px;
+}
+
+/* ── Headings ── */
+#content h1,
+#content h2,
+#content h3,
+#content h4,
+#content h5,
+#content h6 {
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+#content h1 {
+  font-size: 2em;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid var(--heading-border);
+}
+
+#content h2 {
+  font-size: 1.5em;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid var(--heading-border);
+}
+
+#content h3 {
+  font-size: 1.25em;
+}
+
+#content h4 {
+  font-size: 1em;
+}
+
+#content h5 {
+  font-size: 0.875em;
+}
+
+#content h6 {
+  font-size: 0.85em;
+  color: var(--text-secondary);
+}
+
+/* ── Paragraphs & text ── */
+#content p {
+  margin: 0 0 1em;
+}
+
+#content strong {
+  font-weight: 600;
+}
+
+#content a {
+  color: var(--link);
+  text-decoration: none;
+}
+
+#content a:hover {
+  text-decoration: underline;
+}
+
+#content del {
+  opacity: 0.6;
+}
+
+#content hr {
+  border: none;
+  border-top: 2px solid var(--border);
+  margin: 2em 0;
+}
+
+/* ── Lists ── */
+#content ul,
+#content ol {
+  margin: 0 0 1em;
+  padding-left: 2em;
+}
+
+#content li {
+  margin: 0.25em 0;
+}
+
+#content li > p {
+  margin: 0.5em 0;
+}
+
+#content ul.contains-task-list {
+  list-style: none;
+  padding-left: 1em;
+}
+
+#content li input[type="checkbox"] {
+  margin-right: 0.4em;
+  vertical-align: middle;
+}
+
+/* ── Code ── */
+#content code {
+  font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas,
+    "DejaVu Sans Mono", monospace;
+  font-size: 0.875em;
+  background: var(--code-bg);
+  color: var(--code-text);
+  padding: 0.2em 0.4em;
+  border-radius: 4px;
+}
+
+#content pre {
+  background: var(--code-bg);
+  border-radius: 8px;
+  padding: 1em;
+  overflow-x: auto;
+  margin: 0 0 1em;
+  line-height: 1.5;
+}
+
+#content pre code {
+  background: none;
+  padding: 0;
+  border-radius: 0;
+  font-size: 0.85em;
+}
+
+/* ── Blockquotes ── */
+#content blockquote {
+  margin: 0 0 1em;
+  padding: 0.5em 1em;
+  border-left: 3px solid var(--blockquote-border);
+  color: var(--blockquote-text);
+}
+
+#content blockquote > :last-child {
+  margin-bottom: 0;
+}
+
+/* ── Tables ── */
+#content table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0 0 1em;
+  font-size: 0.9em;
+}
+
+#content th,
+#content td {
+  border: 1px solid var(--table-border);
+  padding: 0.5em 0.75em;
+  text-align: left;
+}
+
+#content th {
+  font-weight: 600;
+  background: var(--table-alt-bg);
+}
+
+#content tr:nth-child(even) {
+  background: var(--table-alt-bg);
+}
+
+/* ── Images ── */
+#content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+}
+
+/* ── Error display ── */
+.error {
+  background: var(--error-bg);
+  color: var(--error-text);
+  padding: 1em;
+  border-radius: 8px;
+  margin: 1em 0;
+}
+
+/* ── Drop overlay ── */
+#drop-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: var(--drop-bg);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+}
+
+#drop-overlay.visible {
+  display: flex;
+}
+
+.drop-message {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--drop-border);
+  padding: 2rem 3rem;
+  border: 3px dashed var(--drop-border);
+  border-radius: 16px;
+}
