@@ -129,6 +129,13 @@ body {
   opacity: 0.7;
 }
 
+.version {
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  margin-top: 2rem;
+  opacity: 0.4;
+}
+
 /* ── Toolbar ── */
 #toolbar {
   display: none;

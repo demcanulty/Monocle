@@ -1,0 +1,185 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- Metallic rim gradient -->
+    <linearGradient id="rim" x1="0.15" y1="0.1" x2="0.85" y2="0.9">
+      <stop offset="0%" stop-color="#8090a0"/>
+      <stop offset="22%" stop-color="#c8d4de"/>
+      <stop offset="42%" stop-color="#e8eef4"/>
+      <stop offset="52%" stop-color="#f0f4f8"/>
+      <stop offset="62%" stop-color="#ccd4dc"/>
+      <stop offset="82%" stop-color="#a0acb8"/>
+      <stop offset="100%" stop-color="#6a7684"/>
+    </linearGradient>
+
+    <!-- Rim bevel -->
+    <linearGradient id="rimBevel" x1="0.3" y1="0" x2="0.7" y2="1">
+      <stop offset="0%" stop-color="#dde4ec"/>
+      <stop offset="50%" stop-color="#b8c0c8"/>
+      <stop offset="100%" stop-color="#606870"/>
+    </linearGradient>
+
+    <!-- Deep space -->
+    <radialGradient id="space" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0%" stop-color="#110822"/>
+      <stop offset="50%" stop-color="#080c18"/>
+      <stop offset="100%" stop-color="#030508"/>
+    </radialGradient>
+
+    <!-- Nebula radial color: warm center → cool edge -->
+    <radialGradient id="nebula" cx="0.5" cy="0.5" r="0.48">
+      <stop offset="0%" stop-color="#fff4cc" stop-opacity="0.92"/>
+      <stop offset="8%" stop-color="#ffcc44" stop-opacity="0.82"/>
+      <stop offset="18%" stop-color="#ee8822" stop-opacity="0.55"/>
+      <stop offset="30%" stop-color="#bb3344" stop-opacity="0.35"/>
+      <stop offset="44%" stop-color="#6633aa" stop-opacity="0.25"/>
+      <stop offset="60%" stop-color="#2244aa" stop-opacity="0.18"/>
+      <stop offset="78%" stop-color="#1a6688" stop-opacity="0.12"/>
+      <stop offset="92%" stop-color="#0e4455" stop-opacity="0.05"/>
+      <stop offset="100%" stop-color="#082838" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Outer teal rim glow -->
+    <radialGradient id="outerRing" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="68%" stop-color="#1a7788" stop-opacity="0"/>
+      <stop offset="80%" stop-color="#22aacc" stop-opacity="0.2"/>
+      <stop offset="90%" stop-color="#1a8899" stop-opacity="0.1"/>
+      <stop offset="100%" stop-color="#0a3344" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Star glow -->
+    <radialGradient id="starGlow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="18%" stop-color="#fff8dd"/>
+      <stop offset="45%" stop-color="#ffdd55" stop-opacity="0.6"/>
+      <stop offset="75%" stop-color="#ee9922" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="#cc5500" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Star bright center -->
+    <radialGradient id="starCenter" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="40%" stop-color="#fffde8" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#ffcc44" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Glass reflection -->
+    <linearGradient id="glass" x1="0.2" y1="0.1" x2="0.5" y2="0.45">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.16"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+
+    <!-- Chain gradient -->
+    <linearGradient id="chainGrad" x1="0" y1="0" x2="0.7" y2="1">
+      <stop offset="0%" stop-color="#b8c4d0"/>
+      <stop offset="50%" stop-color="#9aa4b0"/>
+      <stop offset="100%" stop-color="#7a8490"/>
+    </linearGradient>
+
+    <!-- Lens clip -->
+    <clipPath id="lensClip">
+      <circle cx="244" cy="232" r="178"/>
+    </clipPath>
+  </defs>
+
+  <!-- ===== CHAIN ===== -->
+  <path d="M 392,362 C 406,394 422,432 436,462 C 442,476 448,488 452,498"
+        stroke="url(#chainGrad)" stroke-width="3" stroke-linecap="round" fill="none" opacity="0.55"/>
+  <ellipse cx="422" cy="434" rx="6" ry="3.5" transform="rotate(58,422,434)"
+           stroke="#9aa4b0" stroke-width="1.8" fill="none" opacity="0.45"/>
+  <ellipse cx="438" cy="464" rx="6" ry="3.5" transform="rotate(64,438,464)"
+           stroke="#9aa4b0" stroke-width="1.8" fill="none" opacity="0.4"/>
+  <ellipse cx="449" cy="490" rx="5.5" ry="3" transform="rotate(72,449,490)"
+           stroke="#9aa4b0" stroke-width="1.6" fill="none" opacity="0.35"/>
+
+  <!-- ===== MONOCLE RIM ===== -->
+  <circle cx="244" cy="232" r="198" fill="url(#rim)"/>
+  <circle cx="244" cy="232" r="198" fill="none" stroke="#555e68" stroke-width="1.5"/>
+  <circle cx="244" cy="232" r="192" fill="none" stroke="url(#rimBevel)" stroke-width="1.5" opacity="0.5"/>
+  <circle cx="244" cy="232" r="180" fill="none" stroke="#444c56" stroke-width="1.2"/>
+
+  <!-- ===== LENS INTERIOR ===== -->
+  <circle cx="244" cy="232" r="178" fill="url(#space)"/>
+
+  <g clip-path="url(#lensClip)">
+
+    <!-- Faint outer halo rings -->
+    <circle cx="244" cy="232" r="172" fill="none" stroke="#1a6688" stroke-width="8" opacity="0.08"/>
+    <circle cx="244" cy="232" r="160" fill="none" stroke="#1a7799" stroke-width="5" opacity="0.1"/>
+
+    <!-- Concentric elliptical bands — alternating rotation creates spiral illusion -->
+    <!-- Outer: blue-teal -->
+    <ellipse cx="244" cy="232" rx="155" ry="135" transform="rotate(-12,244,232)"
+             fill="none" stroke="#1a6699" stroke-width="16" opacity="0.12"/>
+    <ellipse cx="244" cy="232" rx="142" ry="120" transform="rotate(22,244,232)"
+             fill="none" stroke="#2255aa" stroke-width="13" opacity="0.14"/>
+
+    <!-- Mid: purple -->
+    <ellipse cx="244" cy="232" rx="118" ry="96" transform="rotate(-32,244,232)"
+             fill="none" stroke="#5533aa" stroke-width="14" opacity="0.16"/>
+    <ellipse cx="244" cy="232" rx="100" ry="80" transform="rotate(42,244,232)"
+             fill="none" stroke="#7744aa" stroke-width="11" opacity="0.15"/>
+
+    <!-- Inner: magenta-red -->
+    <ellipse cx="244" cy="232" rx="76" ry="60" transform="rotate(-48,244,232)"
+             fill="none" stroke="#994466" stroke-width="12" opacity="0.18"/>
+    <ellipse cx="244" cy="232" rx="60" ry="46" transform="rotate(55,244,232)"
+             fill="none" stroke="#aa5544" stroke-width="9" opacity="0.17"/>
+
+    <!-- Innermost: amber -->
+    <ellipse cx="244" cy="232" rx="42" ry="32" transform="rotate(-58,244,232)"
+             fill="none" stroke="#cc7733" stroke-width="9" opacity="0.22"/>
+    <ellipse cx="244" cy="232" rx="30" ry="22" transform="rotate(65,244,232)"
+             fill="none" stroke="#dd9944" stroke-width="7" opacity="0.2"/>
+
+    <!-- Spiral arms — primary pair (teal) -->
+    <path d="M 244,232 C 214,194 164,164 114,158 C 78,154 62,178 72,212"
+          stroke="#22aacc" stroke-width="24" stroke-linecap="round" fill="none" opacity="0.1"/>
+    <path d="M 244,232 C 274,270 324,300 374,306 C 410,310 426,286 418,252"
+          stroke="#22aacc" stroke-width="24" stroke-linecap="round" fill="none" opacity="0.1"/>
+
+    <!-- Spiral arms — secondary pair (purple) -->
+    <path d="M 244,232 C 278,198 314,164 324,124 C 330,94 306,78 276,88"
+          stroke="#5544bb" stroke-width="18" stroke-linecap="round" fill="none" opacity="0.08"/>
+    <path d="M 244,232 C 210,266 174,300 164,340 C 158,370 182,386 212,376"
+          stroke="#5544bb" stroke-width="18" stroke-linecap="round" fill="none" opacity="0.08"/>
+
+    <!-- Inner warm spiral wisps -->
+    <path d="M 244,232 C 224,208 190,190 162,184"
+          stroke="#dd8833" stroke-width="10" stroke-linecap="round" fill="none" opacity="0.15"/>
+    <path d="M 244,232 C 264,256 298,274 326,280"
+          stroke="#dd8833" stroke-width="10" stroke-linecap="round" fill="none" opacity="0.15"/>
+
+    <!-- Nebula color overlay -->
+    <circle cx="244" cy="232" r="178" fill="url(#nebula)"/>
+    <!-- Outer teal ring glow -->
+    <circle cx="244" cy="232" r="178" fill="url(#outerRing)"/>
+
+    <!-- Diffraction spikes from central star -->
+    <line x1="244" y1="182" x2="244" y2="282"
+          stroke="#ffeeaa" stroke-width="1.5" opacity="0.35"/>
+    <line x1="194" y1="232" x2="294" y2="232"
+          stroke="#ffeeaa" stroke-width="1.5" opacity="0.35"/>
+    <line x1="214" y1="202" x2="274" y2="262"
+          stroke="#ffddaa" stroke-width="1" opacity="0.2"/>
+    <line x1="274" y1="202" x2="214" y2="262"
+          stroke="#ffddaa" stroke-width="1" opacity="0.2"/>
+
+    <!-- Central star -->
+    <circle cx="244" cy="232" r="40" fill="url(#starGlow)"/>
+    <circle cx="244" cy="232" r="20" fill="url(#starGlow)"/>
+    <circle cx="244" cy="232" r="10" fill="url(#starCenter)"/>
+    <circle cx="244" cy="232" r="5" fill="#ffffff" opacity="0.95"/>
+    <circle cx="244" cy="232" r="2.5" fill="#ffffff"/>
+
+  </g>
+
+  <!-- ===== GLASS HIGHLIGHTS ===== -->
+  <!-- Crescent reflection near top of lens -->
+  <path d="M 142,155 Q 196,132 258,134 Q 318,136 348,152
+           Q 312,138 258,138 Q 198,140 142,155 Z"
+        fill="url(#glass)"/>
+
+  <!-- Rim highlight arc -->
+  <path d="M 106,142 A 198,198 0 0,1 382,142"
+        fill="none" stroke="white" stroke-width="1.5" opacity="0.1"/>
+</svg>

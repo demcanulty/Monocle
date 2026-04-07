@@ -13,6 +13,9 @@ const contentEl = document.getElementById("content");
 const dropOverlay = document.getElementById("drop-overlay");
 
 async function loadFile(path) {
+  // Mark this window as no longer idle
+  await invoke("unregister_idle").catch(() => {});
+
   try {
     const html = await invoke("render_markdown", { path });
     currentFile = path;
@@ -56,7 +59,12 @@ async function reloadFile() {
 async function openFileDialog() {
   const path = await invoke("pick_file");
   if (path) {
-    await loadFile(path);
+    if (currentFile) {
+      // Already viewing a file — open in a new window
+      await invoke("open_in_new_window", { path });
+    } else {
+      await loadFile(path);
+    }
   }
 }
 
@@ -76,6 +84,17 @@ async function loadCustomCss() {
   }
 }
 
+// File opened via dock drag or Finder "Open With"
+listen("file-opened", async (event) => {
+  const path = event.payload;
+  if (!path) return;
+  if (currentFile) {
+    await invoke("open_in_new_window", { path });
+  } else {
+    await loadFile(path);
+  }
+});
+
 // File change watcher
 listen("file-changed", () => {
   clearTimeout(debounceTimer);
@@ -86,14 +105,6 @@ listen("file-changed", () => {
 listen("css-changed", () => {
   clearTimeout(cssDebounceTimer);
   cssDebounceTimer = setTimeout(loadCustomCss, 150);
-});
-
-// Files opened via dock drag or Finder "Open With"
-listen("file-opened", async (event) => {
-  const path = event.payload;
-  if (path) {
-    await loadFile(path);
-  }
 });
 
 // Drag and drop via Tauri events
@@ -118,7 +129,6 @@ listen("tauri://drag-drop", async (event) => {
 
   const paths = event.payload.paths || event.payload;
   if (Array.isArray(paths) && paths.length > 0) {
-    // Prefer .md files, fall back to first file
     const mdFile =
       paths.find(
         (p) =>
@@ -126,7 +136,13 @@ listen("tauri://drag-drop", async (event) => {
           p.endsWith(".markdown") ||
           p.endsWith(".txt"),
       ) || paths[0];
-    await loadFile(mdFile);
+
+    if (currentFile) {
+      // Already viewing a file — open in a new window
+      await invoke("open_in_new_window", { path: mdFile });
+    } else {
+      await loadFile(mdFile);
+    }
   }
 });
 
@@ -146,9 +162,26 @@ window.addEventListener("DOMContentLoaded", async () => {
   await loadCustomCss();
   await invoke("watch_custom_css").catch(() => {});
 
-  // Check for CLI file argument
+  // Check if this window was opened for a specific file
+  const windowFile = await invoke("get_window_file");
+  if (windowFile) {
+    await loadFile(windowFile);
+    return;
+  }
+
+  // Main window: check for CLI file argument
   const initialFile = await invoke("get_initial_file");
   if (initialFile) {
     await loadFile(initialFile);
+    return;
   }
+
+  // No file yet — register as idle and wait briefly for RunEvent::Opened
+  // (on macOS cold start, Opened fires after DOMContentLoaded)
+  await invoke("register_idle").catch(() => {});
+  setTimeout(() => {
+    if (!currentFile) {
+      welcomeEl.style.display = "flex";
+    }
+  }, 200);
 });
