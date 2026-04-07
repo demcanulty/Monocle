@@ -329,9 +329,10 @@ pub fn run() {
         .build(tauri::generate_context!())
         .expect("error while building tauri application");
 
-    app.run(|app_handle, event| {
-        if let tauri::RunEvent::Opened { urls } = event {
-            let state = app_handle.state::<AppState>();
+    app.run(|_app_handle, _event| {
+        #[cfg(target_os = "macos")]
+        if let tauri::RunEvent::Opened { urls } = _event {
+            let state = _app_handle.state::<AppState>();
             for url in urls {
                 if url.scheme() == "file" {
                     if let Ok(path) = url.to_file_path() {
@@ -344,10 +345,10 @@ pub fn run() {
                                 .lock()
                                 .unwrap()
                                 .insert("main".to_string(), path_str);
-                            let _ = app_handle
+                            let _ = _app_handle
                                 .emit_to("main", "check-pending-file", ());
                         } else {
-                            let _ = create_file_window(app_handle, &path_str);
+                            let _ = create_file_window(_app_handle, &path_str);
                         }
                     }
                 }
