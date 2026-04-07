@@ -21,6 +21,8 @@ Open a file from the welcome screen, or from the command line:
 monocle path/to/file.md
 ```
 
+You can also drag and drop `.md` files onto the window, or right-click a markdown file in Finder and choose Open With → Monocle.
+
 ## Custom Styles
 
 Create `~/.config/monocle/custom.css` to override the default rendering. Changes are applied live. All CSS variables and `#content` selectors from the built-in stylesheet can be overridden.
