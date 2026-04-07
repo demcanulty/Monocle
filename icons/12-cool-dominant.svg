@@ -1,0 +1,37 @@
+<!-- Variation 12: Cool Dominant — Platinum rim, teal-to-white nebula, silver chain. Minimal warm except star core -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <radialGradient id="m12-nebula" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#F5FFFE"/>
+      <stop offset="18%" stop-color="#B2DFDB"/>
+      <stop offset="40%" stop-color="#4DB6AC"/>
+      <stop offset="60%" stop-color="#1A6B7B"/>
+      <stop offset="80%" stop-color="#0D3B55"/>
+      <stop offset="100%" stop-color="#061825"/>
+    </radialGradient>
+    <linearGradient id="m12-rim" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#E8ECF0"/>
+      <stop offset="50%" stop-color="#C8CED4"/>
+      <stop offset="100%" stop-color="#D8DCE2"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Cool nebula -->
+  <circle cx="256" cy="246" r="150" fill="url(#m12-nebula)"/>
+
+  <!-- Subtle cool rings -->
+  <circle cx="256" cy="246" r="115" fill="none" stroke="#2A8B9B" stroke-width="1.5" opacity="0.3"/>
+  <circle cx="256" cy="246" r="80" fill="none" stroke="#4DABA5" stroke-width="1" opacity="0.25"/>
+
+  <!-- Star core — warm accent, the only warm element -->
+  <circle cx="256" cy="246" r="14" fill="#F5A623"/>
+  <circle cx="256" cy="246" r="7" fill="#FFE082"/>
+  <circle cx="256" cy="246" r="3" fill="#FFFFFF"/>
+
+  <!-- Platinum rim -->
+  <circle cx="256" cy="246" r="155" fill="none" stroke="url(#m12-rim)" stroke-width="11"/>
+
+  <!-- Silver chain -->
+  <line x1="370" y1="360" x2="426" y2="448" stroke="#B0B8C0" stroke-width="4" stroke-linecap="round"/>
+  <line x1="426" y1="448" x2="419" y2="478" stroke="#B0B8C0" stroke-width="4" stroke-linecap="round"/>
+</svg>

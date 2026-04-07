@@ -1,0 +1,45 @@
+<!-- Variation 4: Gradient Only — No strokes, built purely from overlapping gradient fills -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <radialGradient id="m4-outer" cx="50%" cy="48%" r="50%">
+      <stop offset="60%" stop-color="#0D2B45"/>
+      <stop offset="78%" stop-color="#0D2B45"/>
+      <stop offset="79%" stop-color="#B0B8C0"/>
+      <stop offset="84%" stop-color="#D8DCE0"/>
+      <stop offset="89%" stop-color="#B0B8C0"/>
+      <stop offset="90%" stop-color="transparent"/>
+    </radialGradient>
+    <radialGradient id="m4-nebula-mid" cx="50%" cy="48%" r="30%">
+      <stop offset="0%" stop-color="#F5A623"/>
+      <stop offset="40%" stop-color="#2A9B8B" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#0D2B45" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="m4-nebula-warm" cx="50%" cy="48%" r="15%">
+      <stop offset="0%" stop-color="#FFFBE6"/>
+      <stop offset="40%" stop-color="#F5CE6E" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#E88A30" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="m4-core" cx="50%" cy="48%" r="4%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="60%" stop-color="#FFF8E1"/>
+      <stop offset="100%" stop-color="#FFF8E1" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="m4-chain" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#B0B8C0"/>
+      <stop offset="100%" stop-color="#B0B8C0" stop-opacity="0.2"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Rim + dark fill combined -->
+  <circle cx="256" cy="246" r="170" fill="url(#m4-outer)"/>
+
+  <!-- Nebula layers -->
+  <circle cx="256" cy="246" r="150" fill="url(#m4-nebula-mid)"/>
+  <circle cx="256" cy="246" r="150" fill="url(#m4-nebula-warm)"/>
+
+  <!-- Core glow -->
+  <circle cx="256" cy="246" r="150" fill="url(#m4-core)"/>
+
+  <!-- Chain as gradient-filled shape -->
+  <path d="M368,358 Q400,410 428,448 L424,478 L418,476 L394,414 L362,362 Z" fill="url(#m4-chain)"/>
+</svg>

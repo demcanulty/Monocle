@@ -302,6 +302,7 @@ body {
   -webkit-app-region: no-drag;
 }
 
+#edit-toggle,
 #theme-toggle {
   -webkit-app-region: no-drag;
   background: none;
@@ -315,8 +316,14 @@ body {
   transition: opacity 0.15s;
 }
 
+#edit-toggle:hover,
 #theme-toggle:hover {
   opacity: 1;
+}
+
+#edit-toggle.active {
+  opacity: 1;
+  color: var(--link);
 }
 
 #edit-indicator {

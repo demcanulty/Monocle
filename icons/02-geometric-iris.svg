@@ -1,0 +1,39 @@
+<!-- Variation 2: Geometric Iris — Nebula as concentric hexagons/polygonal rings -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <radialGradient id="m2-bg" cx="50%" cy="48%" r="50%">
+      <stop offset="0%" stop-color="#1A1A2E"/>
+      <stop offset="100%" stop-color="#0A0A14"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Dark interior -->
+  <circle cx="256" cy="246" r="155" fill="url(#m2-bg)"/>
+
+  <!-- Hexagonal rings — outer to inner -->
+  <polygon points="256,116 377,186 377,306 256,376 135,306 135,186"
+           fill="none" stroke="#0D4F5C" stroke-width="3" opacity="0.6"/>
+  <polygon points="256,136 362,196 362,296 256,356 150,296 150,196"
+           fill="none" stroke="#1A7B8B" stroke-width="3" opacity="0.7"/>
+  <polygon points="256,156 347,206 347,286 256,336 165,286 165,206"
+           fill="none" stroke="#2A9BA5" stroke-width="2.5" opacity="0.75"/>
+  <polygon points="256,176 332,216 332,276 256,316 180,276 180,216"
+           fill="none" stroke="#4DB8A0" stroke-width="2.5" opacity="0.8"/>
+  <polygon points="256,196 317,226 317,266 256,296 195,266 195,226"
+           fill="none" stroke="#C49B3C" stroke-width="2" opacity="0.85"/>
+  <polygon points="256,211 302,236 302,256 256,281 210,256 210,236"
+           fill="none" stroke="#E8B84A" stroke-width="2" opacity="0.9"/>
+  <polygon points="256,226 287,241 287,251 256,266 225,251 225,241"
+           fill="none" stroke="#F5CE6E" stroke-width="2" opacity="0.95"/>
+
+  <!-- Star core -->
+  <circle cx="256" cy="246" r="10" fill="#FFFBE6"/>
+  <circle cx="256" cy="246" r="5" fill="#FFFFFF"/>
+
+  <!-- Rim -->
+  <circle cx="256" cy="246" r="155" fill="none" stroke="#A0AAB4" stroke-width="10"/>
+
+  <!-- Chain -->
+  <line x1="370" y1="360" x2="425" y2="445" stroke="#A0AAB4" stroke-width="4" stroke-linecap="round"/>
+  <line x1="425" y1="445" x2="418" y2="475" stroke="#A0AAB4" stroke-width="4" stroke-linecap="round"/>
+</svg>

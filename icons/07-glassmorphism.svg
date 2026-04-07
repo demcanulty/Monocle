@@ -1,0 +1,52 @@
+<!-- Variation 7: Glassmorphism — Frosted glass rim with semi-transparent layers. Modern macOS aesthetic -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <radialGradient id="m7-nebula" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FFFBE6"/>
+      <stop offset="20%" stop-color="#F5A623"/>
+      <stop offset="50%" stop-color="#2A7B8B"/>
+      <stop offset="100%" stop-color="#0D2B45"/>
+    </radialGradient>
+    <radialGradient id="m7-glass-outer" cx="40%" cy="35%" r="60%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0.08"/>
+    </radialGradient>
+    <radialGradient id="m7-glass-inner" cx="60%" cy="65%" r="60%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.05"/>
+    </radialGradient>
+    <linearGradient id="m7-rim-base" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#E8ECF0" stop-opacity="0.5"/>
+      <stop offset="50%" stop-color="#C0C8D0" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#D0D4D8" stop-opacity="0.45"/>
+    </linearGradient>
+    <linearGradient id="m7-highlight" x1="0.3" y1="0" x2="0.7" y2="1">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Nebula fill -->
+  <circle cx="256" cy="246" r="148" fill="url(#m7-nebula)"/>
+
+  <!-- Star core -->
+  <circle cx="256" cy="246" r="12" fill="#FFF8E1"/>
+  <circle cx="256" cy="246" r="5" fill="#FFFFFF"/>
+
+  <!-- Frosted glass rim — multiple layers -->
+  <!-- Base rim -->
+  <circle cx="256" cy="246" r="155" fill="none" stroke="url(#m7-rim-base)" stroke-width="18"/>
+  <!-- Glass overlay outer -->
+  <circle cx="256" cy="246" r="155" fill="none" stroke="url(#m7-glass-outer)" stroke-width="18"/>
+  <!-- Glass overlay inner -->
+  <circle cx="256" cy="246" r="155" fill="none" stroke="url(#m7-glass-inner)" stroke-width="14"/>
+  <!-- Top highlight edge -->
+  <path d="M140,170 A155,155 0 0,1 372,170" fill="none" stroke="url(#m7-highlight)" stroke-width="2" stroke-linecap="round"/>
+  <!-- Subtle border lines -->
+  <circle cx="256" cy="246" r="164" fill="none" stroke="#FFFFFF" stroke-width="0.5" opacity="0.3"/>
+  <circle cx="256" cy="246" r="146" fill="none" stroke="#FFFFFF" stroke-width="0.5" opacity="0.2"/>
+
+  <!-- Chain — frosted style -->
+  <line x1="370" y1="360" x2="428" y2="450" stroke="#C0C8D0" stroke-width="4" stroke-linecap="round" opacity="0.6"/>
+  <line x1="428" y1="450" x2="420" y2="478" stroke="#C0C8D0" stroke-width="4" stroke-linecap="round" opacity="0.5"/>
+</svg>

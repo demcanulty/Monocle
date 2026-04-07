@@ -129,6 +129,7 @@ async function enterEditMode() {
     editorMode = true;
     editIndicatorEl.classList.add("active");
     editIndicatorEl.textContent = "Editing";
+    document.getElementById("edit-toggle").classList.add("active");
     updateDirtyIndicator();
   } catch (err) {
     console.error("Failed to enter edit mode:", err);
@@ -153,6 +154,7 @@ async function exitEditMode(force) {
 
   editorMode = false;
   editIndicatorEl.classList.remove("active", "dirty");
+  document.getElementById("edit-toggle").classList.remove("active");
 
   // Reload from disk to ensure viewer matches saved state
   if (currentFile) {
@@ -393,6 +395,13 @@ document.addEventListener("keydown", (e) => {
 
 window.addEventListener("DOMContentLoaded", async () => {
   document.getElementById("open-btn").addEventListener("click", openFileDialog);
+  document.getElementById("edit-toggle").addEventListener("click", () => {
+    if (editorMode) {
+      exitEditMode(false);
+    } else {
+      enterEditMode();
+    }
+  });
 
   await loadCustomCss();
   await invoke("watch_custom_css").catch(() => {});

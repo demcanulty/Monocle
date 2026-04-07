@@ -1,0 +1,30 @@
+<!-- Variation 3: Thick Bold Rim — Heavy frame, reduced interior for small-size legibility -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <radialGradient id="m3-nebula" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FFFDE8"/>
+      <stop offset="20%" stop-color="#F5A623"/>
+      <stop offset="50%" stop-color="#2A7B8B"/>
+      <stop offset="100%" stop-color="#0D2B45"/>
+    </radialGradient>
+    <linearGradient id="m3-rim" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#DEE2E6"/>
+      <stop offset="50%" stop-color="#ADB5BD"/>
+      <stop offset="100%" stop-color="#868E96"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Nebula fill -->
+  <circle cx="256" cy="242" r="135" fill="url(#m3-nebula)"/>
+
+  <!-- Star core -->
+  <circle cx="256" cy="242" r="16" fill="#FFF8E1"/>
+  <circle cx="256" cy="242" r="7" fill="#FFFFFF"/>
+
+  <!-- Thick rim -->
+  <circle cx="256" cy="242" r="145" fill="none" stroke="url(#m3-rim)" stroke-width="24"/>
+
+  <!-- Chain — thicker to match -->
+  <line x1="365" y1="350" x2="420" y2="438" stroke="#ADB5BD" stroke-width="7" stroke-linecap="round"/>
+  <line x1="420" y1="438" x2="412" y2="472" stroke="#ADB5BD" stroke-width="7" stroke-linecap="round"/>
+</svg>

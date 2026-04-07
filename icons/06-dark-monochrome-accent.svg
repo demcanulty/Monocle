@@ -1,0 +1,43 @@
+<!-- Variation 6: Dark Monochrome + Accent — Grays/silvers with vivid warm star core -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <radialGradient id="m6-space" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#3A3A3A"/>
+      <stop offset="50%" stop-color="#1E1E1E"/>
+      <stop offset="100%" stop-color="#0A0A0A"/>
+    </radialGradient>
+    <radialGradient id="m6-glow" cx="50%" cy="50%" r="20%">
+      <stop offset="0%" stop-color="#F5A623" stop-opacity="0.8"/>
+      <stop offset="50%" stop-color="#E88530" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#E88530" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="m6-rim" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#606060"/>
+      <stop offset="50%" stop-color="#3A3A3A"/>
+      <stop offset="100%" stop-color="#505050"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Dark space interior -->
+  <circle cx="256" cy="246" r="155" fill="url(#m6-space)"/>
+
+  <!-- Subtle gray rings -->
+  <circle cx="256" cy="246" r="120" fill="none" stroke="#2A2A2A" stroke-width="1.5" opacity="0.6"/>
+  <circle cx="256" cy="246" r="90" fill="none" stroke="#333333" stroke-width="1.5" opacity="0.5"/>
+  <circle cx="256" cy="246" r="60" fill="none" stroke="#3A3A3A" stroke-width="1" opacity="0.4"/>
+
+  <!-- Warm accent glow -->
+  <circle cx="256" cy="246" r="155" fill="url(#m6-glow)"/>
+
+  <!-- Star core — the only vivid element -->
+  <circle cx="256" cy="246" r="14" fill="#F5A623"/>
+  <circle cx="256" cy="246" r="7" fill="#FFE082"/>
+  <circle cx="256" cy="246" r="3" fill="#FFFFFF"/>
+
+  <!-- Silver rim -->
+  <circle cx="256" cy="246" r="155" fill="none" stroke="url(#m6-rim)" stroke-width="10"/>
+
+  <!-- Chain -->
+  <line x1="368" y1="358" x2="425" y2="445" stroke="#505050" stroke-width="4" stroke-linecap="round"/>
+  <line x1="425" y1="445" x2="418" y2="475" stroke="#505050" stroke-width="4" stroke-linecap="round"/>
+</svg>

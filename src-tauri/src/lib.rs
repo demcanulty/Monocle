@@ -6,6 +6,8 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::Mutex;
+use tauri::image::Image;
+use tauri::menu::{AboutMetadata, Menu, PredefinedMenuItem, Submenu};
 use tauri::{AppHandle, Emitter, Manager, WebviewUrl, WebviewWindowBuilder};
 
 static WINDOW_ID: AtomicU32 = AtomicU32::new(0);
@@ -246,6 +248,64 @@ fn mark_window_occupied(window: tauri::Window) {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let app = tauri::Builder::default()
+        .menu(|handle| {
+            let about = PredefinedMenuItem::about(
+                handle,
+                Some("About Monocle"),
+                Some(AboutMetadata {
+                    copyright: Some("Dan McAnulty — demcanulty@gmail.com".into()),
+                    icon: Some(Image::from_bytes(include_bytes!("../icons/icon.png")).unwrap()),
+                    ..Default::default()
+                }),
+            )?;
+            let app_menu = Submenu::with_items(
+                handle,
+                "Monocle",
+                true,
+                &[
+                    &about,
+                    &PredefinedMenuItem::separator(handle)?,
+                    &PredefinedMenuItem::services(handle, None)?,
+                    &PredefinedMenuItem::separator(handle)?,
+                    &PredefinedMenuItem::hide(handle, None)?,
+                    &PredefinedMenuItem::hide_others(handle, None)?,
+                    &PredefinedMenuItem::show_all(handle, None)?,
+                    &PredefinedMenuItem::separator(handle)?,
+                    &PredefinedMenuItem::quit(handle, None)?,
+                ],
+            )?;
+            let file_menu = Submenu::with_items(
+                handle,
+                "File",
+                true,
+                &[&PredefinedMenuItem::close_window(handle, None)?],
+            )?;
+            let edit_menu = Submenu::with_items(
+                handle,
+                "Edit",
+                true,
+                &[
+                    &PredefinedMenuItem::undo(handle, None)?,
+                    &PredefinedMenuItem::redo(handle, None)?,
+                    &PredefinedMenuItem::separator(handle)?,
+                    &PredefinedMenuItem::cut(handle, None)?,
+                    &PredefinedMenuItem::copy(handle, None)?,
+                    &PredefinedMenuItem::paste(handle, None)?,
+                    &PredefinedMenuItem::select_all(handle, None)?,
+                ],
+            )?;
+            let window_menu = Submenu::with_items(
+                handle,
+                "Window",
+                true,
+                &[
+                    &PredefinedMenuItem::minimize(handle, None)?,
+                    &PredefinedMenuItem::maximize(handle, None)?,
+                    &PredefinedMenuItem::fullscreen(handle, None)?,
+                ],
+            )?;
+            Menu::with_items(handle, &[&app_menu, &file_menu, &edit_menu, &window_menu])
+        })
         .manage(AppState {
             watchers: Mutex::new(HashMap::new()),
             css_watcher: Mutex::new(None),

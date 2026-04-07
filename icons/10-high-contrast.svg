@@ -1,0 +1,30 @@
+<!-- Variation 10: High Contrast — Optimized for 32px legibility. Fewer elements, bolder colors -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <radialGradient id="m10-nebula" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="15%" stop-color="#FFD54F"/>
+      <stop offset="40%" stop-color="#E65100"/>
+      <stop offset="65%" stop-color="#006064"/>
+      <stop offset="100%" stop-color="#001529"/>
+    </radialGradient>
+    <linearGradient id="m10-rim" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#F0F0F0"/>
+      <stop offset="100%" stop-color="#B0B0B0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Nebula — high contrast gradient -->
+  <circle cx="256" cy="242" r="135" fill="url(#m10-nebula)"/>
+
+  <!-- Bold star core -->
+  <circle cx="256" cy="242" r="22" fill="#FFD54F"/>
+  <circle cx="256" cy="242" r="10" fill="#FFFFFF"/>
+
+  <!-- Very thick rim -->
+  <circle cx="256" cy="242" r="150" fill="none" stroke="url(#m10-rim)" stroke-width="28"/>
+
+  <!-- Chain — bold -->
+  <line x1="362" y1="352" x2="415" y2="435" stroke="#C0C0C0" stroke-width="8" stroke-linecap="round"/>
+  <line x1="415" y1="435" x2="408" y2="468" stroke="#C0C0C0" stroke-width="8" stroke-linecap="round"/>
+</svg>
