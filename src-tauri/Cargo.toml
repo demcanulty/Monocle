@@ -1,6 +1,6 @@
 [package]
 name = "monocle"
-version = "0.3.0"
+version = "0.5.0"
 description = "A standalone markdown viewer with live reload"
 authors = ["Daniel McAnulty"]
 edition = "2021"

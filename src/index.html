@@ -5,6 +5,8 @@
     <link rel="stylesheet" href="styles.css" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Monocle</title>
+    <script src="/vendor/codemirror-bundle.js"></script>
+    <script src="/editor.js"></script>
     <script type="module" src="/main.js" defer></script>
   </head>
 
@@ -16,15 +18,32 @@
         <p class="tagline">Markdown viewer with live reload</p>
         <button id="open-btn">Open File</button>
         <p class="hint">Drop a .md file here &middot; &#8984;O to open</p>
-        <p class="version">v0.3.0</p>
+        <p class="version">v0.5.0</p>
       </div>
     </div>
 
     <div id="toolbar">
       <span id="file-path"></span>
+      <span id="edit-indicator"></span>
+      <button id="theme-toggle" title="Toggle light/dark theme">&#9789;</button>
     </div>
 
-    <article id="content"></article>
+    <div id="split-container" style="display: none">
+      <div id="editor-pane">
+        <div id="external-change-bar">
+          <span>File changed on disk.</span>
+          <button id="reload-external">Reload</button>
+          <button id="ignore-external">Ignore</button>
+        </div>
+        <div id="editor-host"></div>
+      </div>
+      <div id="divider"></div>
+      <div id="preview-pane">
+        <article id="preview-content" class="md-rendered"></article>
+      </div>
+    </div>
+
+    <article id="content" class="md-rendered"></article>
 
     <div id="drop-overlay">
       <div class="drop-message">Drop to open</div>

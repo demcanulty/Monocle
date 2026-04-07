@@ -1,20 +1,23 @@
 use notify::{EventKind, RecommendedWatcher, RecursiveMode, Watcher};
 use pulldown_cmark::{html, Options, Parser};
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::ffi::OsString;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicU32, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::Mutex;
 use tauri::{AppHandle, Emitter, Manager, WebviewUrl, WebviewWindowBuilder};
 
 static WINDOW_ID: AtomicU32 = AtomicU32::new(0);
 
+/// True until the main window loads a file (via any mechanism).
+/// Lock-free — avoids the Mutex timing issues that plagued idle_windows.
+static MAIN_AVAILABLE: AtomicBool = AtomicBool::new(true);
+
 struct AppState {
     watchers: Mutex<HashMap<String, RecommendedWatcher>>,
     css_watcher: Mutex<Option<RecommendedWatcher>>,
     pending_files: Mutex<HashMap<String, String>>,
-    idle_windows: Mutex<HashSet<String>>,
 }
 
 fn custom_css_path() -> PathBuf {
@@ -50,21 +53,37 @@ fn create_file_window(app: &AppHandle, path: &str) -> Result<(), String> {
     Ok(())
 }
 
+fn render_to_html(content: &str) -> String {
+    let mut options = Options::empty();
+    options.insert(Options::ENABLE_TABLES);
+    options.insert(Options::ENABLE_STRIKETHROUGH);
+
+    let parser = Parser::new_ext(content, options);
+    let mut html_output = String::new();
+    html::push_html(&mut html_output, parser);
+    html_output
+}
+
 #[tauri::command]
 fn render_markdown(path: &str) -> Result<String, String> {
     let content =
         fs::read_to_string(path).map_err(|e| format!("Failed to read file: {}", e))?;
+    Ok(render_to_html(&content))
+}
 
-    let mut options = Options::empty();
-    options.insert(Options::ENABLE_TABLES);
-    options.insert(Options::ENABLE_STRIKETHROUGH);
-    options.insert(Options::ENABLE_TASKLISTS);
+#[tauri::command]
+fn render_markdown_text(text: &str) -> String {
+    render_to_html(text)
+}
 
-    let parser = Parser::new_ext(&content, options);
-    let mut html_output = String::new();
-    html::push_html(&mut html_output, parser);
+#[tauri::command]
+fn read_file_text(path: &str) -> Result<String, String> {
+    fs::read_to_string(path).map_err(|e| format!("Failed to read file: {}", e))
+}
 
-    Ok(html_output)
+#[tauri::command]
+fn write_file(path: &str, content: &str) -> Result<(), String> {
+    fs::write(path, content).map_err(|e| format!("Failed to write file: {}", e))
 }
 
 #[tauri::command]
@@ -77,7 +96,6 @@ fn watch_file(
     let canonical = fs::canonicalize(&path).map_err(|e| e.to_string())?;
     let label = window.label().to_string();
 
-    // Remove existing watcher for this window
     state.watchers.lock().unwrap().remove(&label);
 
     let file_name: OsString = canonical
@@ -217,22 +235,12 @@ fn open_in_new_window(path: String, app: AppHandle) -> Result<(), String> {
     create_file_window(&app, &path)
 }
 
+/// Called by the frontend when it loads a file — marks the main window as occupied.
 #[tauri::command]
-fn register_idle(window: tauri::Window, state: tauri::State<'_, AppState>) {
-    state
-        .idle_windows
-        .lock()
-        .unwrap()
-        .insert(window.label().to_string());
-}
-
-#[tauri::command]
-fn unregister_idle(window: tauri::Window, state: tauri::State<'_, AppState>) {
-    state
-        .idle_windows
-        .lock()
-        .unwrap()
-        .remove(window.label());
+fn mark_window_occupied(window: tauri::Window) {
+    if window.label() == "main" {
+        MAIN_AVAILABLE.store(false, Ordering::SeqCst);
+    }
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -242,28 +250,18 @@ pub fn run() {
             watchers: Mutex::new(HashMap::new()),
             css_watcher: Mutex::new(None),
             pending_files: Mutex::new(HashMap::new()),
-            idle_windows: Mutex::new(HashSet::new()),
-        })
-        .setup(|app| {
-            // Pre-register the main window as idle so RunEvent::Opened
-            // can target it before the frontend has loaded
-            let state = app.state::<AppState>();
-            state
-                .idle_windows
-                .lock()
-                .unwrap()
-                .insert("main".to_string());
-            Ok(())
         })
         .invoke_handler(tauri::generate_handler![
             render_markdown,
+            render_markdown_text,
+            read_file_text,
+            write_file,
             watch_file,
             pick_file,
             get_initial_file,
             get_window_file,
             open_in_new_window,
-            register_idle,
-            unregister_idle,
+            mark_window_occupied,
             load_custom_css,
             get_custom_css_path,
             watch_custom_css,
@@ -279,25 +277,15 @@ pub fn run() {
                     if let Ok(path) = url.to_file_path() {
                         let path_str = path.to_string_lossy().to_string();
 
-                        // Reuse an idle window if one exists
-                        let idle_label = {
-                            let mut idle = state.idle_windows.lock().unwrap();
-                            let label = idle.iter().next().cloned();
-                            if let Some(ref l) = label {
-                                idle.remove(l);
-                            }
-                            label
-                        };
-
-                        if let Some(label) = idle_label {
-                            // Store for the frontend to pick up on init (cold start)
+                        // Try to reuse the main window if it hasn't loaded a file yet
+                        if MAIN_AVAILABLE.swap(false, Ordering::SeqCst) {
                             state
                                 .pending_files
                                 .lock()
                                 .unwrap()
-                                .insert(label.clone(), path_str.clone());
-                            // Also emit for the already-running case
-                            let _ = app_handle.emit_to(&label, "file-opened", &path_str);
+                                .insert("main".to_string(), path_str);
+                            let _ = app_handle
+                                .emit_to("main", "check-pending-file", ());
                         } else {
                             let _ = create_file_window(app_handle, &path_str);
                         }
