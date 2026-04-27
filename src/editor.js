@@ -107,6 +107,16 @@ window.MonocleEditor = {
     lastSavedContent = text;
   },
 
+  insertAtCursor(text) {
+    if (!editorView) return;
+    const { from, to } = editorView.state.selection.main;
+    editorView.dispatch({
+      changes: { from, to, insert: text },
+      selection: { anchor: from + text.length },
+    });
+    editorView.focus();
+  },
+
   getContent() {
     if (!editorView) return "";
     return editorView.state.doc.toString();

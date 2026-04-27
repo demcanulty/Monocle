@@ -7,7 +7,7 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::Mutex;
 use tauri::image::Image;
-use tauri::menu::{AboutMetadata, Menu, PredefinedMenuItem, Submenu};
+use tauri::menu::{AboutMetadata, Menu, MenuItem, PredefinedMenuItem, Submenu};
 use tauri::{AppHandle, Emitter, Manager, WebviewUrl, WebviewWindowBuilder};
 
 static WINDOW_ID: AtomicU32 = AtomicU32::new(0);
@@ -274,11 +274,24 @@ pub fn run() {
                     &PredefinedMenuItem::quit(handle, None)?,
                 ],
             )?;
+            let print_item =
+                MenuItem::with_id(handle, "print", "Print…", true, Some("CmdOrCtrl+P"))?;
             let file_menu = Submenu::with_items(
                 handle,
                 "File",
                 true,
-                &[&PredefinedMenuItem::close_window(handle, None)?],
+                &[
+                    &print_item,
+                    &PredefinedMenuItem::separator(handle)?,
+                    &PredefinedMenuItem::close_window(handle, None)?,
+                ],
+            )?;
+            let insert_page_break = MenuItem::with_id(
+                handle,
+                "insert-page-break",
+                "Insert Page Break",
+                true,
+                Some("CmdOrCtrl+Shift+B"),
             )?;
             let edit_menu = Submenu::with_items(
                 handle,
@@ -292,6 +305,8 @@ pub fn run() {
                     &PredefinedMenuItem::copy(handle, None)?,
                     &PredefinedMenuItem::paste(handle, None)?,
                     &PredefinedMenuItem::select_all(handle, None)?,
+                    &PredefinedMenuItem::separator(handle)?,
+                    &insert_page_break,
                 ],
             )?;
             let window_menu = Submenu::with_items(
@@ -305,6 +320,32 @@ pub fn run() {
                 ],
             )?;
             Menu::with_items(handle, &[&app_menu, &file_menu, &edit_menu, &window_menu])
+        })
+        .on_menu_event(|app, event| {
+            let id = event.id().0.as_str();
+            match id {
+                "print" => {
+                    let windows = app.webview_windows();
+                    let target = windows
+                        .values()
+                        .find(|w| w.is_focused().unwrap_or(false))
+                        .or_else(|| windows.values().next());
+                    if let Some(w) = target {
+                        let _ = w.print();
+                    }
+                }
+                "insert-page-break" => {
+                    let windows = app.webview_windows();
+                    let target = windows
+                        .values()
+                        .find(|w| w.is_focused().unwrap_or(false))
+                        .or_else(|| windows.values().next());
+                    if let Some(w) = target {
+                        let _ = w.emit("insert-page-break", ());
+                    }
+                }
+                _ => {}
+            }
         })
         .manage(AppState {
             watchers: Mutex::new(HashMap::new()),

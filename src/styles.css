@@ -650,3 +650,78 @@ body {
   border: 3px dashed var(--drop-border);
   border-radius: 16px;
 }
+
+/* ── Print ── */
+@media print {
+  @page {
+    margin: 0.75in;
+  }
+
+  #toolbar,
+  #welcome,
+  #drop-overlay,
+  #external-change-bar,
+  #editor-pane,
+  #divider {
+    display: none !important;
+  }
+
+  html,
+  body {
+    background: #ffffff !important;
+    color: #333 !important;
+    height: auto !important;
+  }
+
+  /* Viewer mode — flatten the centered, padded reading column */
+  #content {
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Editor mode — flatten split layout, let preview flow full-width */
+  #split-container {
+    height: auto !important;
+    margin-top: 0 !important;
+  }
+
+  #preview-pane {
+    overflow: visible !important;
+    background: #ffffff !important;
+  }
+
+  #preview-content {
+    padding: 0 !important;
+  }
+
+  /* Page-break hints — keep headings with following content,
+     avoid splitting code blocks, tables, blockquotes, images */
+  .md-rendered h1,
+  .md-rendered h2,
+  .md-rendered h3,
+  .md-rendered h4,
+  .md-rendered h5,
+  .md-rendered h6 {
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+
+  .md-rendered pre,
+  .md-rendered table,
+  .md-rendered blockquote,
+  .md-rendered img {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  .md-rendered a {
+    color: #4183c4 !important;
+  }
+
+  /* User-controlled page breaks: <div class="page-break"></div> */
+  .page-break {
+    page-break-after: always;
+    break-after: page;
+  }
+}

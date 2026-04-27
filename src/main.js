@@ -331,6 +331,12 @@ listen("css-changed", () => {
   cssDebounceTimer = setTimeout(loadCustomCss, 150);
 });
 
+// Edit → Insert Page Break (only acts in edit mode)
+listen("insert-page-break", () => {
+  if (!editorMode) return;
+  MonocleEditor.insertAtCursor('\n\n<div class="page-break"></div>\n\n');
+});
+
 // Drag and drop via Tauri events
 let dragDepth = 0;
 
