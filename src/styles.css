@@ -671,6 +671,9 @@ body {
     background: #ffffff !important;
     color: #333 !important;
     height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
   }
 
   /* Viewer mode — flatten the centered, padded reading column */
@@ -678,15 +681,24 @@ body {
     max-width: none !important;
     margin: 0 !important;
     padding: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
   }
 
-  /* Editor mode — flatten split layout, let preview flow full-width */
+  /* Editor mode — flatten split layout, let preview flow full-width.
+     Chromium's print engine fails to paginate tall content inside a flex
+     item, so force the split container and preview pane to block layout. */
   #split-container {
+    display: block !important;
     height: auto !important;
     margin-top: 0 !important;
   }
 
   #preview-pane {
+    display: block !important;
+    flex: none !important;
+    height: auto !important;
     overflow: visible !important;
     background: #ffffff !important;
   }
@@ -695,16 +707,14 @@ body {
     padding: 0 !important;
   }
 
-  /* Page-break hints — keep headings with following content,
-     avoid splitting code blocks, tables, blockquotes, images */
-  .md-rendered h1,
-  .md-rendered h2,
-  .md-rendered h3,
-  .md-rendered h4,
-  .md-rendered h5,
-  .md-rendered h6 {
-    page-break-after: avoid;
-    break-after: avoid;
+  /* Pagination hints. NOTE: WebKit (used by WKWebView on macOS) has a
+     long-standing bug where `page-break-after: avoid` on headings near a
+     page boundary causes it to silently drop trailing content instead of
+     paginating it. We use orphans/widows + break-inside avoid on the
+     heading's tight block so WebKit produces all pages correctly. */
+  .md-rendered {
+    orphans: 3;
+    widows: 3;
   }
 
   .md-rendered pre,

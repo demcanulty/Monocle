@@ -2247,7 +2247,7 @@ dependencies = [
 
 [[package]]
 name = "monocle"
-version = "0.7.4"
+version = "0.7.15"
 dependencies = [
  "dirs",
  "notify",

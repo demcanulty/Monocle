@@ -319,7 +319,19 @@ pub fn run() {
                     &PredefinedMenuItem::fullscreen(handle, None)?,
                 ],
             )?;
-            Menu::with_items(handle, &[&app_menu, &file_menu, &edit_menu, &window_menu])
+            let devtools_item = MenuItem::with_id(
+                handle,
+                "toggle-devtools",
+                "Toggle DevTools",
+                true,
+                Some("CmdOrCtrl+Alt+I"),
+            )?;
+            let view_menu =
+                Submenu::with_items(handle, "View", true, &[&devtools_item])?;
+            Menu::with_items(
+                handle,
+                &[&app_menu, &file_menu, &edit_menu, &view_menu, &window_menu],
+            )
         })
         .on_menu_event(|app, event| {
             let id = event.id().0.as_str();
@@ -331,7 +343,16 @@ pub fn run() {
                         .find(|w| w.is_focused().unwrap_or(false))
                         .or_else(|| windows.values().next());
                     if let Some(w) = target {
+                        // WKWebView paginates with stale layout on first
+                        // print(). Calling print() a second time after the
+                        // panel opens re-runs pagination (this is the same
+                        // path as the user's manual ⌘P-twice workaround).
                         let _ = w.print();
+                        let w = w.clone();
+                        std::thread::spawn(move || {
+                            std::thread::sleep(std::time::Duration::from_millis(200));
+                            let _ = w.print();
+                        });
                     }
                 }
                 "insert-page-break" => {
@@ -342,6 +363,20 @@ pub fn run() {
                         .or_else(|| windows.values().next());
                     if let Some(w) = target {
                         let _ = w.emit("insert-page-break", ());
+                    }
+                }
+                "toggle-devtools" => {
+                    let windows = app.webview_windows();
+                    let target = windows
+                        .values()
+                        .find(|w| w.is_focused().unwrap_or(false))
+                        .or_else(|| windows.values().next());
+                    if let Some(w) = target {
+                        if w.is_devtools_open() {
+                            w.close_devtools();
+                        } else {
+                            w.open_devtools();
+                        }
                     }
                 }
                 _ => {}

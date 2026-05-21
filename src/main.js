@@ -1,6 +1,12 @@
 const { invoke } = window.__TAURI__.core;
 const { listen } = window.__TAURI__.event;
 const { getCurrentWindow } = window.__TAURI__.window;
+const { getVersion } = window.__TAURI__.app;
+
+getVersion().then((v) => {
+  const el = document.getElementById("version");
+  if (el) el.textContent = `v${v}`;
+});
 
 let currentFile = null;
 let debounceTimer = null;
