@@ -12,6 +12,7 @@ Renders `.md` files with GitHub-style formatting. Watches the file for changes a
 - Dark mode (follows system preference)
 - Custom CSS via `~/.config/monocle/custom.css`
 - Registered as a macOS handler for `.md` files
+- Headless PDF export that matches the on-screen view (`bin/monocle-render`)
 
 ## Usage
 
@@ -22,6 +23,22 @@ monocle path/to/file.md
 ```
 
 You can also drag and drop `.md` files onto the window, or right-click a markdown file in Finder and choose Open With → Monocle.
+
+## Headless PDF export
+
+Render a `.md` file to a PDF that matches the on-screen view — no window, no
+print dialog — so it can be scripted and batched:
+
+```
+bin/monocle-render FILE.md [MORE.md ...]   # -> <dir>/pdf/<name>.md.pdf
+bin/monocle-render -o OUT.pdf FILE.md      # explicit output path
+bin/monocle-render *.md                     # batch via shell glob
+```
+
+It reuses Monocle's own markdown→HTML conversion and `styles.css` (including the
+`@media print` rules), and keeps cross-document links between rendered PDFs
+clickable. Requires Google Chrome (or Chromium; set `$CHROME`) and `cargo`. See
+[`render/README.md`](render/README.md) for how it works and the design notes.
 
 ## Custom Styles
 

@@ -1,0 +1,187 @@
+#!/usr/bin/env bash
+# monocle-render — headless markdown -> PDF using Monocle's own renderer + CSS.
+#
+# Converts a .md file to a PDF that matches what the Monocle viewer shows on
+# screen (same pulldown-cmark output, same src/styles.css including its
+# @media print rules) with no GUI window and no print dialog. Cross-document
+# links between rendered docs stay clickable in the PDF.
+#
+# By default the PDFs are written to a "pdf/" subfolder next to each source.
+#
+# Usage:
+#   monocle-render FILE.md [FILE2.md ...]   # -> <dir>/pdf/<name>.md.pdf
+#   monocle-render --out-dir DIR FILE.md…   # write PDFs into DIR
+#   monocle-render -o OUT.pdf FILE.md       # explicit output (single input only)
+#   monocle-render --keep-html FILE.md      # also keep the intermediate .html
+#   monocle-render *.md                      # batch via shell glob
+#
+# Pipeline: render_html (Rust — Monocle's md->HTML + embedded styles.css)
+#           -> headless Chrome --print-to-pdf.
+# Requirements: cargo, and Google Chrome / Chromium (override path via $CHROME).
+# macOS-focused: the only hard macOS assumption is the default Chrome path.
+
+set -euo pipefail
+
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+REPO_ROOT=$(cd "$SCRIPT_DIR/.." && pwd)
+RENDER_CRATE="$REPO_ROOT/render"
+
+usage() {
+  sed -n '2,26p' "${BASH_SOURCE[0]}" | sed 's/^#\{1,\} \{0,1\}//'
+}
+
+out_path=""
+out_dir=""
+keep_html=0
+inputs=()
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -o|--output) out_path="${2:-}"; shift 2;;
+    --out-dir) out_dir="${2:-}"; shift 2;;
+    --keep-html) keep_html=1; shift;;
+    -h|--help) usage; exit 0;;
+    --) shift; while [[ $# -gt 0 ]]; do inputs+=("$1"); shift; done;;
+    -*) echo "monocle-render: unknown option: $1 (try --help)" >&2; exit 2;;
+    *) inputs+=("$1"); shift;;
+  esac
+done
+
+if [[ ${#inputs[@]} -eq 0 ]]; then
+  echo "monocle-render: no input files (try --help)" >&2; exit 2
+fi
+if [[ -n "$out_path" && ${#inputs[@]} -ne 1 ]]; then
+  echo "monocle-render: -o/--output requires exactly one input file" >&2; exit 2
+fi
+if [[ -n "$out_path" && -n "$out_dir" ]]; then
+  echo "monocle-render: use either -o/--output or --out-dir, not both" >&2; exit 2
+fi
+
+# --- locate a Chromium-based browser ---
+if [[ -z "${CHROME:-}" ]]; then
+  for c in \
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+    "/Applications/Chromium.app/Contents/MacOS/Chromium" \
+    "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge" \
+    "$(command -v google-chrome 2>/dev/null || true)" \
+    "$(command -v chromium 2>/dev/null || true)"; do
+    if [[ -n "$c" && -x "$c" ]]; then CHROME="$c"; break; fi
+  done
+fi
+if [[ -z "${CHROME:-}" || ! -x "$CHROME" ]]; then
+  echo "monocle-render: no Chrome/Chromium found. Install Google Chrome, or set \$CHROME to a Chromium-based browser binary." >&2
+  exit 3
+fi
+
+# --- build / refresh the Rust renderer (no-op when already up to date) ---
+echo "[monocle-render] building render_html (if needed)…" >&2
+( cd "$RENDER_CRATE" && cargo build --release --quiet )
+RENDER_BIN="$RENDER_CRATE/target/release/render_html"
+
+TMP_HTML=""
+cleanup() { [[ -n "$TMP_HTML" && -f "$TMP_HTML" ]] && rm -f "$TMP_HTML"; }
+trap cleanup EXIT
+
+# Resolve a path to absolute (its directory must already exist).
+abspath() { printf '%s/%s' "$(cd "$(dirname "$1")" && pwd)" "$(basename "$1")"; }
+
+# Print a page to PDF with headless Chrome. Chrome writes the file but, with a
+# private --user-data-dir, does not always exit on its own — so we launch it in
+# the background, wait until the PDF is present and its size has settled, then
+# terminate it. Returns 0 if a non-empty PDF was produced. ~40s hard cap.
+render_pdf() {
+  local url="$1" out="$2"
+  rm -f "$out"
+  # Fresh profile per call: we terminate Chrome ourselves, which can leave a
+  # SingletonLock behind and stall a reused profile on the next launch.
+  local profile
+  profile=$(mktemp -d "${TMPDIR:-/tmp}/monocle-render-profile.XXXXXX")
+  "$CHROME" \
+    --headless=new \
+    --disable-gpu \
+    --no-pdf-header-footer \
+    --no-first-run \
+    --no-default-browser-check \
+    --user-data-dir="$profile" \
+    --print-to-pdf="$out" \
+    "$url" >/dev/null 2>&1 &
+  local cpid=$! ticks=0 size=0 prev=-1
+  while kill -0 "$cpid" 2>/dev/null; do
+    if [[ -f "$out" ]]; then
+      size=$(stat -f%z "$out" 2>/dev/null || echo 0)
+      if [[ "$size" -gt 0 && "$size" -eq "$prev" ]]; then
+        kill "$cpid" 2>/dev/null; wait "$cpid" 2>/dev/null || true
+        break
+      fi
+      prev="$size"
+    fi
+    sleep 0.3
+    ticks=$((ticks + 1))
+    if [[ "$ticks" -ge 130 ]]; then
+      kill "$cpid" 2>/dev/null; wait "$cpid" 2>/dev/null || true
+      break
+    fi
+  done
+  wait "$cpid" 2>/dev/null || true
+  rm -rf "$profile"
+  [[ -s "$out" ]]
+}
+
+rc=0
+for in_md in "${inputs[@]}"; do
+  if [[ ! -f "$in_md" ]]; then
+    echo "monocle-render: not a file: $in_md" >&2; rc=1; continue
+  fi
+
+  # Decide where the PDF goes.
+  #   -o OUT.pdf  -> exactly that file
+  #   --out-dir D -> D/<name>.md.pdf
+  #   (default)   -> <source-dir>/pdf/<name>.md.pdf
+  if [[ -n "$out_path" ]]; then
+    pdf="$out_path"
+  else
+    if [[ -n "$out_dir" ]]; then
+      dest_dir="$out_dir"
+    else
+      dest_dir="$(dirname "$in_md")/pdf"
+    fi
+    mkdir -p "$dest_dir"
+    pdf="$dest_dir/$(basename "$in_md").pdf"   # foo.md -> foo.md.pdf
+  fi
+
+  if [[ "$keep_html" -eq 1 ]]; then
+    html="${in_md%.*}.html"     # alongside the source, e.g. foo.html
+    TMP_HTML=""
+  else
+    html=$(mktemp "${TMPDIR:-/tmp}/monocle-render.XXXXXX.html")
+    TMP_HTML="$html"
+  fi
+
+  abs_pdf=$(abspath "$pdf")
+  link_dir=$(dirname "$abs_pdf")   # rendered PDFs share this dir; link there
+
+  # render_html resolves relative images/resources against the source dir, and
+  # points markdown cross-links at --link-dir (where the sibling PDFs land).
+  "$RENDER_BIN" "$in_md" "$html" --link-dir "$link_dir"
+
+  abs_html=$(abspath "$html")
+
+  if ! render_pdf "file://$abs_html" "$abs_pdf"; then
+    echo "monocle-render: Chrome failed on $in_md" >&2; rc=1
+  fi
+
+  if [[ "$keep_html" -ne 1 ]]; then rm -f "$html"; TMP_HTML=""; fi
+
+  if [[ -s "$abs_pdf" ]]; then
+    pages=""
+    if command -v pdfinfo >/dev/null 2>&1; then
+      n=$(pdfinfo "$abs_pdf" 2>/dev/null | awk '/^Pages:/{print $2}')
+      [[ -n "$n" ]] && pages=" ($n pages)"
+    fi
+    echo "  ✓ $in_md -> $pdf$pages"
+  else
+    echo "  ✗ $in_md -> $pdf (no output produced)" >&2; rc=1
+  fi
+done
+
+exit "$rc"

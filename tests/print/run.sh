@@ -18,21 +18,23 @@ WORK_DIR=$(mktemp -d /tmp/monocle-print-test.XXXXXX)
 trap 'rm -rf "$WORK_DIR"' EXIT
 
 FIXTURE="${1:-$SCRIPT_DIR/fixtures/knob_analysis.md}"
-STYLES="$REPO_ROOT/src/styles.css"
 HTML="$WORK_DIR/page.html"
 PDF="$WORK_DIR/page.pdf"
 TXT="$WORK_DIR/page.txt"
 
 # --- Build the Rust + Swift tools once, cache in WORK_DIR's sibling. ---
+# The renderer is the shared product tool in ../../render (also used by
+# bin/monocle-render); the Swift WebKit printer is local to this test.
 TOOL_DIR="$SCRIPT_DIR/.tools"
 mkdir -p "$TOOL_DIR"
 RENDER_BIN="$TOOL_DIR/render_html"
 PDF_BIN="$TOOL_DIR/html_to_pdf"
+RENDER_CRATE="$REPO_ROOT/render"
 
-if [[ ! -x "$RENDER_BIN" || "$SCRIPT_DIR/render_html.rs" -nt "$RENDER_BIN" ]]; then
-    echo "[build] render_html.rs -> $RENDER_BIN" >&2
-    (cd "$SCRIPT_DIR" && cargo build --release --quiet --bin render_html)
-    cp "$SCRIPT_DIR/target/release/render_html" "$RENDER_BIN"
+if [[ ! -x "$RENDER_BIN" || "$RENDER_CRATE/render_html.rs" -nt "$RENDER_BIN" || "$REPO_ROOT/src/styles.css" -nt "$RENDER_BIN" ]]; then
+    echo "[build] render/render_html.rs -> $RENDER_BIN" >&2
+    (cd "$RENDER_CRATE" && cargo build --release --quiet)
+    cp "$RENDER_CRATE/target/release/render_html" "$RENDER_BIN"
 fi
 
 if [[ ! -x "$PDF_BIN" || "$SCRIPT_DIR/html_to_pdf.swift" -nt "$PDF_BIN" ]]; then
@@ -40,9 +42,9 @@ if [[ ! -x "$PDF_BIN" || "$SCRIPT_DIR/html_to_pdf.swift" -nt "$PDF_BIN" ]]; then
     swiftc -O -o "$PDF_BIN" "$SCRIPT_DIR/html_to_pdf.swift"
 fi
 
-# --- Render markdown -> HTML ---
+# --- Render markdown -> HTML (styles.css is embedded in render_html) ---
 echo "[step] render markdown" >&2
-"$RENDER_BIN" "$FIXTURE" "$STYLES" "$HTML"
+"$RENDER_BIN" "$FIXTURE" "$HTML"
 
 # --- HTML -> PDF via WKWebView + NSPrintOperation ---
 echo "[step] render PDF" >&2

@@ -1,0 +1,14 @@
+[package]
+name = "render_html"
+version = "0.1.0"
+edition = "2021"
+description = "Monocle's markdown->HTML step for headless PDF export"
+
+[[bin]]
+name = "render_html"
+path = "render_html.rs"
+
+[dependencies]
+# Keep this version aligned with src-tauri/Cargo.toml so the CLI and the GUI
+# parse markdown identically.
+pulldown-cmark = "0.12"
