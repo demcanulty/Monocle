@@ -564,8 +564,24 @@ body {
   padding: 6px 13px;
 }
 
+/* Box-drawing, block, geometric-shape and arrow glyphs (used in ASCII
+   diagrams) are routed to Menlo, which covers them all with consistent
+   metrics. The primary code font, SF Mono, lacks some of these — notably the
+   U+25BA / U+25C4 arrowheads — so they would otherwise fall back to a font
+   whose glyphs sit at a different height than SF Mono's box-drawing line,
+   leaving the line and the arrowhead vertically misaligned. macOS-only (uses
+   the local Menlo); elsewhere it simply has no effect and the normal stack
+   applies. */
+@font-face {
+  font-family: "MonoDiagramFix";
+  src: local("Menlo");
+  unicode-range: U+2190-21FF, U+2500-257F, U+2580-259F, U+25A0-25FF,
+    U+27F0-27FF, U+2900-297F;
+}
+
 .md-rendered code, .md-rendered tt {
-  font-family: "SF Mono", "Fira Code", Menlo, Consolas, monospace;
+  font-family: "MonoDiagramFix", "SF Mono", "Fira Code", Menlo, Consolas,
+    monospace;
   margin: 0 2px;
   padding: 0 5px;
   white-space: nowrap;
