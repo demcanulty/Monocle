@@ -564,24 +564,15 @@ body {
   padding: 6px 13px;
 }
 
-/* Box-drawing, block, geometric-shape and arrow glyphs (used in ASCII
-   diagrams) are routed to Menlo, which covers them all with consistent
-   metrics. The primary code font, SF Mono, lacks some of these — notably the
-   U+25BA / U+25C4 arrowheads — so they would otherwise fall back to a font
-   whose glyphs sit at a different height than SF Mono's box-drawing line,
-   leaving the line and the arrowhead vertically misaligned. macOS-only (uses
-   the local Menlo); elsewhere it simply has no effect and the normal stack
-   applies. */
-@font-face {
-  font-family: "MonoDiagramFix";
-  src: local("Menlo");
-  unicode-range: U+2190-21FF, U+2500-257F, U+2580-259F, U+25A0-25FF,
-    U+27F0-27FF, U+2900-297F;
-}
-
+/* Code font. The fallback after SF Mono is deliberately just the generic
+   `monospace` — do NOT reintroduce an explicit Menlo/Consolas here. SF Mono
+   lacks the ► / ◄ arrowhead pointers (U+25BA / U+25C4) used in ASCII diagrams;
+   when Menlo is in the stack it supplies them as a triangle that sits low,
+   misaligned with the box-drawing line (the bug we chased). Letting those few
+   glyphs fall through to the generic monospace renders them centered, while
+   SF Mono still draws the box-drawing characters into clean, connected boxes. */
 .md-rendered code, .md-rendered tt {
-  font-family: "MonoDiagramFix", "SF Mono", "Fira Code", Menlo, Consolas,
-    monospace;
+  font-family: "SF Mono", monospace;
   margin: 0 2px;
   padding: 0 5px;
   white-space: nowrap;
