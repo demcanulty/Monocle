@@ -56,7 +56,22 @@ func substringBetween(_ s: String, start: String, end: String) -> String? {
     guard let hi = s[lo...].range(of: end)?.lowerBound else { return nil }
     return String(s[lo..<hi])
 }
-let styleContent = substringBetween(fullHTML, start: "<style>", end: "</style>") ?? ""
+/// Every <style> block, in document order, joined into one. render_html emits
+/// two of them — the base styles.css, then the user's custom.css overlay — and
+/// taking only the first would silently render without the overlay. Order is
+/// preserved, so concatenating is cascade-equivalent to separate elements.
+func allStyleBlocks(_ s: String) -> String {
+    var blocks: [String] = []
+    var rest = Substring(s)
+    while let lo = rest.range(of: "<style>")?.upperBound {
+        let tail = rest[lo...]
+        guard let hi = tail.range(of: "</style>")?.lowerBound else { break }
+        blocks.append(String(tail[..<hi]))
+        rest = tail[hi...]
+    }
+    return blocks.joined(separator: "\n")
+}
+let styleContent = allStyleBlocks(fullHTML)
 let articleInner = substringBetween(fullHTML, start: "<article id=\"content\" class=\"md-rendered\" style=\"display:block\">", end: "</article>")
     ?? substringBetween(fullHTML, start: "<article", end: "</article>")
     ?? ""

@@ -55,15 +55,48 @@ fn create_file_window(app: &AppHandle, path: &str) -> Result<(), String> {
     Ok(())
 }
 
+include!("../../shared/frontmatter.rs");
+
 fn render_to_html(content: &str) -> String {
     let mut options = Options::empty();
     options.insert(Options::ENABLE_TABLES);
     options.insert(Options::ENABLE_STRIKETHROUGH);
+    // Front matter is metadata, not content: push_html treats a metadata block
+    // as non-writing, so enabling this both strips the `---` block from the
+    // rendered output and lets `doc_css` read the `css:` key out of it.
+    // FIDELITY: must match render/render_html.rs's render_body.
+    options.insert(Options::ENABLE_YAML_STYLE_METADATA_BLOCKS);
 
     let parser = Parser::new_ext(content, options);
     let mut html_output = String::new();
     html::push_html(&mut html_output, parser);
     html_output
+}
+
+/// The stylesheet the document at `path` names in its front matter, if any.
+///
+/// `text` is the in-editor buffer when the editor pane is open, so an unsaved
+/// change to the `css:` key takes effect in the preview immediately; when it is
+/// absent the file on disk is read instead.
+#[tauri::command]
+fn load_doc_css(path: &str, text: Option<&str>) -> Option<String> {
+    let md = match text {
+        Some(t) => t.to_string(),
+        None => fs::read_to_string(path).ok()?,
+    };
+    // Canonicalize so a relative `css:` resolves against the document's real
+    // directory rather than the process working directory.
+    let doc = fs::canonicalize(path).unwrap_or_else(|_| PathBuf::from(path));
+    doc_css(&doc, &md).map(|(_, contents)| contents)
+}
+
+/// Absolute path of the stylesheet the document names, for the file watcher.
+#[tauri::command]
+fn doc_css_path(path: &str) -> Option<String> {
+    let md = fs::read_to_string(path).ok()?;
+    let doc = fs::canonicalize(path).unwrap_or_else(|_| PathBuf::from(path));
+    let value = front_matter_css(&md)?;
+    resolve_doc_css(&doc, &value).map(|p| p.to_string_lossy().to_string())
 }
 
 #[tauri::command]
@@ -109,19 +142,37 @@ fn watch_file(
         .ok_or("No parent directory")?
         .to_path_buf();
 
+    // Also follow the stylesheet the document names in its front matter, so
+    // editing the docs folder's house style live-reloads the same way editing
+    // the document does. It may sit in another directory (`css: ../shared/x.css`),
+    // hence a second watch target.
+    let mut watch_dirs = vec![watch_dir];
+    let mut target_names = vec![file_name];
+    if let Some(css) = fs::read_to_string(&canonical)
+        .ok()
+        .and_then(|md| front_matter_css(&md))
+        .and_then(|v| resolve_doc_css(&canonical, &v))
+    {
+        if let (Some(name), Some(dir)) = (css.file_name(), css.parent()) {
+            target_names.push(name.to_os_string());
+            if !watch_dirs.iter().any(|d| d == dir) {
+                watch_dirs.push(dir.to_path_buf());
+            }
+        }
+    }
+
     let app_handle = app.clone();
     let target_label = label.clone();
-    let target_name = file_name;
 
     let mut watcher =
         notify::recommended_watcher(move |res: Result<notify::Event, notify::Error>| {
             if let Ok(event) = res {
                 match event.kind {
                     EventKind::Modify(_) | EventKind::Create(_) => {
-                        let matches = event
-                            .paths
-                            .iter()
-                            .any(|p| p.file_name().map_or(false, |n| n == target_name));
+                        let matches = event.paths.iter().any(|p| {
+                            p.file_name()
+                                .map_or(false, |n| target_names.iter().any(|t| t == n))
+                        });
                         if matches {
                             let _ = app_handle.emit_to(&target_label, "file-changed", ());
                         }
@@ -132,9 +183,11 @@ fn watch_file(
         })
         .map_err(|e| e.to_string())?;
 
-    watcher
-        .watch(&watch_dir, RecursiveMode::NonRecursive)
-        .map_err(|e| e.to_string())?;
+    for dir in &watch_dirs {
+        watcher
+            .watch(dir, RecursiveMode::NonRecursive)
+            .map_err(|e| e.to_string())?;
+    }
 
     state.watchers.lock().unwrap().insert(label, watcher);
 
@@ -401,6 +454,8 @@ pub fn run() {
             load_custom_css,
             get_custom_css_path,
             watch_custom_css,
+            load_doc_css,
+            doc_css_path,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application");

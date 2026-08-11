@@ -20,6 +20,7 @@ By default the PDFs land in a `pdf/` subfolder next to each source.
 FILE.md ──▶ render_html (Rust) ──▶ FILE.html ──▶ headless Chrome ──▶ FILE.md.pdf
             Monocle's md→HTML                     --print-to-pdf
             + embedded styles.css
+            + ~/.config/monocle/custom.css
 ```
 
 1. **`render_html`** (this crate) converts Markdown to HTML using the *exact*
@@ -32,6 +33,71 @@ FILE.md ──▶ render_html (Rust) ──▶ FILE.html ──▶ headless Chro
 2. **Headless Chrome** (`--headless=new --print-to-pdf`) turns that HTML into a
    paginated Letter PDF, honouring `styles.css`'s `@media print` block (light
    theme, `@page` margins, page-break hints).
+
+### Custom CSS
+
+`render_html` emits up to **three** `<style>` blocks, in the same order the
+viewer loads them — least specific to most:
+
+| # | Layer | Source |
+|---|---|---|
+| 1 | base | embedded `src/styles.css`, or `--css FILE` |
+| 2 | user | `~/.config/monocle/custom.css`, or `--custom-css FILE` |
+| 3 | document | the `css:` key in the document's own YAML front matter |
+
+Layer 2's path is resolved by the same logic as `monocle_lib::custom_css_path`,
+and layer 3 by `shared/frontmatter.rs`, which is `include!`d by both this crate
+and `src-tauri` — so the viewer and the PDF can never disagree about which
+stylesheet a document gets. A missing file at any layer is not an error; the
+block is simply omitted.
+
+Layer 3 lets a stylesheet travel *with* the docs instead of living in the config
+folder:
+
+```markdown
+---
+title: Quarterly report
+css: ./house-style.css
+---
+
+# Quarterly report
+```
+
+The path resolves against the directory holding the `.md` file, never the working
+directory, so the folder stays portable — move it, or hand it to someone else,
+and it renders the same. Only values ending in `.css` are accepted, so a document
+cannot name an unrelated file to be inlined into the page.
+
+Enabling front matter means pulldown-cmark's `ENABLE_YAML_STYLE_METADATA_BLOCKS`
+is on in both renderers. A `---` fenced block at the very top of a document is
+now metadata and no longer renders; a lone `---` thematic break (no closing
+fence) is unaffected.
+
+Because the overlay comes last it lands *after* the `@media print` block, so an
+equal-specificity user rule wins over it. That is deliberate: it matches the
+viewer (and therefore the viewer's own ⌘P), and the print rules that actually
+keep the page laid out correctly are `!important`, so only the discretionary
+hints (`orphans`/`widows`, `break-inside`, `.page-break`) are overridable.
+
+| Flag | Effect |
+|---|---|
+| *(none)* | layer 2 from `~/.config`, layer 3 from the document |
+| `--custom-css FILE` | use `FILE` as layer 2; unreadable is an error |
+| `--no-custom-css` | drop layer 2 (the machine-local sheet) |
+| `--no-doc-css` | drop layer 3 (the document's own sheet) |
+| `--css FILE` | **replace** the base sheet; also suppresses layer 2, since `--css` means "I control the stylesheet". Combine with `--custom-css` to opt back in. |
+
+`--no-custom-css` deliberately does *not* drop layer 3: it exists so a render
+can't depend on machine-local state, and a document's own stylesheet ships with
+the document. Pass both flags for stock styling.
+
+`monocle-render` forwards all three flags and passes nothing by default. Either
+way the resolved choices are echoed to stderr:
+
+```
+[monocle-render] custom CSS: /Users/you/.config/monocle/custom.css
+[monocle-render] document CSS: /docs/guide/house-style.css
+```
 
 ## Why this approach
 
@@ -60,8 +126,14 @@ sibling PDFs are written.
 
 - **Google Chrome** (or any Chromium-based browser; override with `$CHROME`).
 - **Rust / cargo** to build `render_html`.
-- The arrow/box-drawing alignment fix in `styles.css` uses the system **Menlo**
-  font (macOS). Elsewhere it has no effect and the normal font stack applies.
+- The arrow/box-drawing alignment fix in `styles.css` uses the system **SF Mono**
+  font (macOS) for code blocks, with the generic `monospace` as the *only* fallback
+  — deliberately **not** Menlo. SF Mono draws the box-drawing lines into clean,
+  connected boxes; the `►`/`◄` arrowheads (U+25BA / U+25C4) fall through to the
+  generic monospace so they render vertically centered on the line. (Menlo would
+  supply those arrowheads as a low-sitting triangle that misaligns with the box
+  line — the bug this stack avoids.) See the comment at `src/styles.css` (code
+  font). Off macOS it has no effect and the normal font stack applies.
 
 ## Limitations
 

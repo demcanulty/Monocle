@@ -53,8 +53,8 @@
   --ed-text: #24292f;
   --ed-gutter-bg: #f6f8fa;
   --ed-gutter-text: #656d76;
-  --ed-active-line: #f6f8fa;
-  --ed-selection: rgba(9, 105, 218, 0.15);
+  --ed-active-line: rgba(9, 105, 218, 0.05);
+  --ed-selection: rgba(9, 105, 218, 0.32);
   --ed-cursor: #24292f;
   --ed-border: #d0d7de;
   --ed-heading: #24292f;
@@ -70,8 +70,8 @@
   --ed-text: #839496;
   --ed-gutter-bg: #073642;
   --ed-gutter-text: #586e75;
-  --ed-active-line: #073642;
-  --ed-selection: rgba(211, 54, 130, 0.4);
+  --ed-active-line: rgba(147, 161, 161, 0.13);
+  --ed-selection: rgba(211, 54, 130, 0.55);
   --ed-cursor: #fdf6e3;
   --ed-border: #073642;
   --ed-heading: #b58900;
@@ -87,8 +87,8 @@
   --ed-text: #657b83;
   --ed-gutter-bg: #eee8d5;
   --ed-gutter-text: #93a1a1;
-  --ed-active-line: #eee8d5;
-  --ed-selection: rgba(211, 54, 130, 0.2);
+  --ed-active-line: rgba(88, 110, 117, 0.10);
+  --ed-selection: rgba(211, 54, 130, 0.35);
   --ed-cursor: #002b36;
   --ed-border: #eee8d5;
   --ed-heading: #b58900;
@@ -104,8 +104,8 @@
   --ed-text: #cccccc;
   --ed-gutter-bg: #252525;
   --ed-gutter-text: #888888;
-  --ed-active-line: #353535;
-  --ed-selection: rgba(81, 81, 81, 0.6);
+  --ed-active-line: rgba(255, 255, 255, 0.045);
+  --ed-selection: rgba(120, 150, 200, 0.45);
   --ed-cursor: #cc99cc;
   --ed-border: #515151;
   --ed-heading: #66cccc;
@@ -121,8 +121,8 @@
   --ed-text: #ffffff;
   --ed-gutter-bg: #001d3f;
   --ed-gutter-text: #7285b7;
-  --ed-active-line: #003f8e;
-  --ed-selection: rgba(0, 63, 142, 0.6);
+  --ed-active-line: rgba(0, 122, 255, 0.30);
+  --ed-selection: rgba(120, 170, 255, 0.45);
   --ed-cursor: #ebbbff;
   --ed-border: #003f8e;
   --ed-heading: #ff9da4;
@@ -138,8 +138,8 @@
   --ed-text: #eeeeee;
   --ed-gutter-bg: #21222c;
   --ed-gutter-text: #586e75;
-  --ed-active-line: #333545;
-  --ed-selection: rgba(255, 79, 146, 0.4);
+  --ed-active-line: rgba(255, 255, 255, 0.06);
+  --ed-selection: rgba(255, 79, 146, 0.50);
   --ed-cursor: #ff3319;
   --ed-border: #44475a;
   --ed-heading: #8d7cd2;
@@ -155,8 +155,8 @@
   --ed-text: #000000;
   --ed-gutter-bg: #f6f8fa;
   --ed-gutter-text: #93a1a1;
-  --ed-active-line: #f6f8fa;
-  --ed-selection: rgba(255, 79, 146, 0.3);
+  --ed-active-line: rgba(9, 105, 218, 0.05);
+  --ed-selection: rgba(255, 79, 146, 0.38);
   --ed-cursor: #000000;
   --ed-border: #d0d7de;
   --ed-heading: #6c71c4;
@@ -172,8 +172,8 @@
   --ed-text: #424242;
   --ed-gutter-bg: #f0f0f0;
   --ed-gutter-text: #bbbbbb;
-  --ed-active-line: #f0f0f0;
-  --ed-selection: rgba(0, 185, 255, 0.2);
+  --ed-active-line: rgba(0, 0, 0, 0.04);
+  --ed-selection: rgba(0, 185, 255, 0.35);
   --ed-cursor: #00b9ff;
   --ed-border: #e0e0e0;
   --ed-heading: #424242;
@@ -387,6 +387,10 @@ body {
   border-right: 1px solid var(--ed-border);
 }
 
+/* --ed-active-line MUST stay translucent. CodeMirror draws the selection in
+   .cm-selectionLayer at z-index -2, while .cm-activeLine paints inside
+   .cm-content above it — an opaque active-line colour hides the selection
+   completely on the one line the cursor is always on. */
 #editor-host .cm-editor .cm-activeLineGutter,
 #editor-host .cm-editor .cm-activeLine {
   background: var(--ed-active-line);
@@ -456,6 +460,109 @@ body {
 
 #external-change-bar button:hover {
   background: var(--table-alt-bg);
+}
+
+/* ── Find bar (rendered view) ── */
+#find-bar {
+  display: none;
+  position: fixed;
+  top: 40px;
+  right: 16px;
+  z-index: 200;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 5px 4px 10px;
+  background: var(--toolbar-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+}
+
+#find-bar.visible {
+  display: flex;
+}
+
+#find-input {
+  width: 170px;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.8rem;
+  line-height: 20px;
+  padding: 0;
+}
+
+#find-input::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.7;
+}
+
+#find-bar.no-match #find-input,
+#find-bar.no-match #find-count {
+  color: var(--error-text);
+}
+
+#find-count {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+  min-width: 38px;
+  text-align: right;
+}
+
+.find-sep {
+  width: 1px;
+  height: 16px;
+  background: var(--border);
+  margin: 0 2px;
+}
+
+#find-bar button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 0.85rem;
+  line-height: 1;
+  padding: 4px 5px;
+  border-radius: 4px;
+  opacity: 0.65;
+  transition:
+    opacity 0.15s,
+    background 0.15s;
+}
+
+#find-bar button:hover {
+  opacity: 1;
+  background: var(--table-alt-bg);
+}
+
+#find-case {
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+#find-case.active {
+  opacity: 1;
+  color: var(--link);
+  background: var(--table-alt-bg);
+}
+
+/* Match highlights. The rendered markdown is always light (see .md-rendered),
+   so these don't need a dark-mode variant. */
+::highlight(monocle-find) {
+  background-color: #fff2a8;
+  color: #1a1a1a;
+}
+
+::highlight(monocle-find-current) {
+  background-color: #ff9632;
+  color: #1a1a1a;
 }
 
 /* ── Markdown Content ── */
@@ -669,8 +776,15 @@ body {
   #drop-overlay,
   #external-change-bar,
   #editor-pane,
+  #find-bar,
   #divider {
     display: none !important;
+  }
+
+  ::highlight(monocle-find),
+  ::highlight(monocle-find-current) {
+    background-color: transparent;
+    color: inherit;
   }
 
   html,

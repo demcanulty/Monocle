@@ -3,8 +3,9 @@
 #
 # Converts a .md file to a PDF that matches what the Monocle viewer shows on
 # screen (same pulldown-cmark output, same src/styles.css including its
-# @media print rules) with no GUI window and no print dialog. Cross-document
-# links between rendered docs stay clickable in the PDF.
+# @media print rules, and the same ~/.config/monocle/custom.css overlay when
+# you have one) with no GUI window and no print dialog. Cross-document links
+# between rendered docs stay clickable in the PDF.
 #
 # By default the PDFs are written to a "pdf/" subfolder next to each source.
 #
@@ -14,6 +15,20 @@
 #   monocle-render -o OUT.pdf FILE.md       # explicit output (single input only)
 #   monocle-render --keep-html FILE.md      # also keep the intermediate .html
 #   monocle-render *.md                      # batch via shell glob
+#
+# Custom CSS:
+#   ~/.config/monocle/custom.css is overlaid automatically when it exists, so
+#   PDFs pick up the same tweaks the viewer shows. Override with:
+#   monocle-render --custom-css FILE.css FILE.md   # use this overlay instead
+#   monocle-render --no-custom-css FILE.md         # ignore ~/.config sheet
+#
+#   A document can also name its own stylesheet in YAML front matter, which
+#   travels with it (relative to the .md file, so the folder stays portable):
+#     ---
+#     css: ./house-style.css
+#     ---
+#   monocle-render --no-doc-css FILE.md            # ignore that key
+#   Cascade: styles.css -> ~/.config sheet -> the document's own sheet.
 #
 # Pipeline: render_html (Rust — Monocle's md->HTML + embedded styles.css)
 #           -> headless Chrome --print-to-pdf.
@@ -26,13 +41,19 @@ SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 REPO_ROOT=$(cd "$SCRIPT_DIR/.." && pwd)
 RENDER_CRATE="$REPO_ROOT/render"
 
+# Print the header comment block: line 2 through the first blank line. Derived
+# rather than a fixed range so adding documentation above can't spill code into
+# --help (it used to print `set -euo pipefail` and the variable assignments).
 usage() {
-  sed -n '2,26p' "${BASH_SOURCE[0]}" | sed 's/^#\{1,\} \{0,1\}//'
+  sed -n '2,/^$/p' "${BASH_SOURCE[0]}" | sed 's/^#\{1,\} \{0,1\}//'
 }
 
 out_path=""
 out_dir=""
 keep_html=0
+custom_css=""
+no_custom_css=0
+no_doc_css=0
 inputs=()
 
 while [[ $# -gt 0 ]]; do
@@ -40,6 +61,9 @@ while [[ $# -gt 0 ]]; do
     -o|--output) out_path="${2:-}"; shift 2;;
     --out-dir) out_dir="${2:-}"; shift 2;;
     --keep-html) keep_html=1; shift;;
+    --custom-css) custom_css="${2:-}"; shift 2;;
+    --no-custom-css) no_custom_css=1; shift;;
+    --no-doc-css) no_doc_css=1; shift;;
     -h|--help) usage; exit 0;;
     --) shift; while [[ $# -gt 0 ]]; do inputs+=("$1"); shift; done;;
     -*) echo "monocle-render: unknown option: $1 (try --help)" >&2; exit 2;;
@@ -56,6 +80,19 @@ fi
 if [[ -n "$out_path" && -n "$out_dir" ]]; then
   echo "monocle-render: use either -o/--output or --out-dir, not both" >&2; exit 2
 fi
+if [[ -n "$custom_css" && "$no_custom_css" -eq 1 ]]; then
+  echo "monocle-render: use either --custom-css or --no-custom-css, not both" >&2; exit 2
+fi
+if [[ -n "$custom_css" && ! -f "$custom_css" ]]; then
+  echo "monocle-render: no such custom CSS file: $custom_css" >&2; exit 2
+fi
+
+# Pass nothing by default: render_html then applies ~/.config/monocle/custom.css
+# on its own, resolving the path exactly as the viewer does.
+css_args=()
+if [[ -n "$custom_css" ]]; then css_args+=(--custom-css "$custom_css"); fi
+if [[ "$no_custom_css" -eq 1 ]]; then css_args+=(--no-custom-css); fi
+if [[ "$no_doc_css" -eq 1 ]]; then css_args+=(--no-doc-css); fi
 
 # --- locate a Chromium-based browser ---
 if [[ -z "${CHROME:-}" ]]; then
@@ -79,7 +116,7 @@ echo "[monocle-render] building render_html (if needed)…" >&2
 RENDER_BIN="$RENDER_CRATE/target/release/render_html"
 
 TMP_HTML=""
-cleanup() { [[ -n "$TMP_HTML" && -f "$TMP_HTML" ]] && rm -f "$TMP_HTML"; }
+cleanup() { [[ -n "$TMP_HTML" && -f "$TMP_HTML" ]] && rm -f "$TMP_HTML"; return 0; }
 trap cleanup EXIT
 
 # Resolve a path to absolute (its directory must already exist).
@@ -162,7 +199,7 @@ for in_md in "${inputs[@]}"; do
 
   # render_html resolves relative images/resources against the source dir, and
   # points markdown cross-links at --link-dir (where the sibling PDFs land).
-  "$RENDER_BIN" "$in_md" "$html" --link-dir "$link_dir"
+  "$RENDER_BIN" "$in_md" "$html" --link-dir "$link_dir" ${css_args[@]+"${css_args[@]}"}
 
   abs_html=$(abspath "$html")
 

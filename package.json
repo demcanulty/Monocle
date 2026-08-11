@@ -1,10 +1,11 @@
 {
   "name": "monocle",
   "private": true,
-  "version": "0.7.15",
+  "version": "0.8.0",
   "type": "module",
   "scripts": {
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "dev:serve": "python3 -m http.server 1420 --bind 127.0.0.1 --directory src"
   },
   "devDependencies": {
     "@codemirror/commands": "^6.10.3",

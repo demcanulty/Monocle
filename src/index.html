@@ -7,6 +7,7 @@
     <title>Monocle</title>
     <script src="/vendor/codemirror-bundle.js"></script>
     <script src="/editor.js"></script>
+    <script src="/find.js"></script>
     <script type="module" src="/main.js" defer></script>
   </head>
 
@@ -27,6 +28,23 @@
       <span id="edit-indicator"></span>
       <button id="edit-toggle" title="Toggle editor (⌘E)">&#9998;</button>
       <button id="theme-toggle" title="Toggle light/dark theme">&#9789;</button>
+    </div>
+
+    <div id="find-bar">
+      <input
+        id="find-input"
+        type="text"
+        placeholder="Find"
+        spellcheck="false"
+        autocomplete="off"
+        aria-label="Find in document"
+      />
+      <span id="find-count"></span>
+      <button id="find-case" title="Match case" aria-pressed="false">Aa</button>
+      <span class="find-sep"></span>
+      <button id="find-prev" title="Previous match (&#8679;&#8984;G)">&#8593;</button>
+      <button id="find-next" title="Next match (&#8984;G)">&#8595;</button>
+      <button id="find-close" title="Close (Esc)">&#10005;</button>
     </div>
 
     <div id="split-container" style="display: none">

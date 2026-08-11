@@ -25,7 +25,7 @@ const {
     syntaxHighlighting,
     defaultHighlightStyle,
   },
-  search: { searchKeymap, highlightSelectionMatches },
+  search: { searchKeymap, highlightSelectionMatches, openSearchPanel },
 } = CM;
 
 let editorView = null;
@@ -138,6 +138,15 @@ window.MonocleEditor = {
 
   focus() {
     if (editorView) editorView.focus();
+  },
+
+  hasFocus() {
+    return !!editorView && editorView.hasFocus;
+  },
+
+  openSearch() {
+    if (!editorView) return;
+    openSearchPanel(editorView);
   },
 
   destroy() {

@@ -41,6 +41,7 @@ async function loadFile(path) {
     currentFile = path;
 
     contentEl.innerHTML = html;
+    await loadDocCss();
     welcomeEl.style.display = "none";
     toolbarEl.style.display = "flex";
     contentEl.style.display = "block";
@@ -83,6 +84,8 @@ async function reloadFile() {
         MonocleEditor.setContent(text);
         const html = await invoke("render_markdown_text", { text });
         previewContent.innerHTML = html;
+        await loadDocCss(text);
+        MonocleFind.refresh();
       } catch (_) {}
     }
     return;
@@ -93,6 +96,8 @@ async function reloadFile() {
   try {
     const html = await invoke("render_markdown", { path: currentFile });
     contentEl.innerHTML = html;
+    await loadDocCss();
+    MonocleFind.refresh();
   } catch (_) {}
   requestAnimationFrame(() => {
     document.documentElement.scrollTop = scrollY;
@@ -131,6 +136,8 @@ async function enterEditMode() {
     // Render initial preview
     const html = await invoke("render_markdown_text", { text });
     previewContent.innerHTML = html;
+    await loadDocCss(text);
+    MonocleFind.setRoot(previewContent);
 
     editorMode = true;
     editIndicatorEl.classList.add("active");
@@ -167,8 +174,10 @@ async function exitEditMode(force) {
     try {
       const html = await invoke("render_markdown", { path: currentFile });
       contentEl.innerHTML = html;
+      await loadDocCss();
     } catch (_) {}
   }
+  MonocleFind.setRoot(contentEl);
 
   const fileName = currentFile ? currentFile.split("/").pop() : "Monocle";
   try {
@@ -201,7 +210,24 @@ async function onEditorChange(text) {
   try {
     const html = await invoke("render_markdown_text", { text });
     previewContent.innerHTML = html;
+    await loadDocCss(text);
+    MonocleFind.refresh();
   } catch (_) {}
+}
+
+// ── Find ──
+
+/// Cmd+F targets whichever rendered view is on screen; when the caret is in the
+/// editor it belongs to CodeMirror's own search panel instead.
+function contentRoot() {
+  return editorMode ? previewContent : contentEl;
+}
+
+function editorHasFocus() {
+  return (
+    editorMode &&
+    (MonocleEditor.hasFocus() || editorHost.contains(document.activeElement))
+  );
 }
 
 function updateDirtyIndicator() {
@@ -253,6 +279,40 @@ async function loadCustomCss() {
     if (!el) {
       el = document.createElement("style");
       el.id = "custom-css";
+      // Must sit BEFORE #doc-css so the document's own sheet still wins. This
+      // matters when custom.css is created while a document is already open:
+      // appending would put the user layer last and invert the cascade.
+      // insertBefore with a null reference node is just appendChild.
+      document.head.insertBefore(el, document.getElementById("doc-css"));
+    }
+    el.textContent = css;
+  } else if (el) {
+    el.remove();
+  }
+}
+
+// ── Document stylesheet (front matter `css:`) ──
+
+// Third and last layer of the cascade: styles.css, then the user's
+// ~/.config/monocle/custom.css, then whatever the open document names. Appended
+// after #custom-css so a docs folder's house style wins over a personal tweak.
+// `text` is the editor buffer when the editor is open, so an unsaved change to
+// the `css:` key shows up in the preview right away.
+async function loadDocCss(text) {
+  let el = document.getElementById("doc-css");
+  if (!currentFile) {
+    if (el) el.remove();
+    return;
+  }
+  let css = null;
+  try {
+    css = await invoke("load_doc_css", { path: currentFile, text: text ?? null });
+  } catch (_) {}
+
+  if (css) {
+    if (!el) {
+      el = document.createElement("style");
+      el.id = "doc-css";
       document.head.appendChild(el);
     }
     el.textContent = css;
@@ -271,6 +331,7 @@ document.getElementById("reload-external").addEventListener("click", async () =>
     MonocleEditor.setContent(text);
     const html = await invoke("render_markdown_text", { text });
     previewContent.innerHTML = html;
+    await loadDocCss(text);
     updateDirtyIndicator();
   } catch (_) {}
 });
@@ -401,11 +462,29 @@ document.addEventListener("keydown", (e) => {
       saveFile();
     }
   }
+  if ((e.metaKey || e.ctrlKey) && (e.key === "f" || e.key === "F")) {
+    if (editorHasFocus()) {
+      // CodeMirror's own keymap owns this; opening again just re-selects the
+      // search field, which is what ⌘F should do anyway.
+      MonocleEditor.openSearch();
+      return;
+    }
+    if (!currentFile) return;
+    e.preventDefault();
+    MonocleFind.open(contentRoot());
+  }
+  if ((e.metaKey || e.ctrlKey) && (e.key === "g" || e.key === "G")) {
+    if (editorHasFocus() || !MonocleFind.isOpen()) return;
+    e.preventDefault();
+    if (e.shiftKey) MonocleFind.prev();
+    else MonocleFind.next();
+  }
 });
 
 // ── Init ──
 
 window.addEventListener("DOMContentLoaded", async () => {
+  MonocleFind.init();
   document.getElementById("open-btn").addEventListener("click", openFileDialog);
   document.getElementById("edit-toggle").addEventListener("click", () => {
     if (editorMode) {

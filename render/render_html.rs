@@ -1,9 +1,13 @@
 // render_html — Monocle's headless markdown -> HTML step for PDF export.
 //
 // It produces the SAME HTML the Monocle viewer shows on screen:
-//   * the identical pulldown-cmark options the GUI uses, and
-//   * the project's real `src/styles.css` (embedded at build time), wrapped in
-//     the same `<article class="md-rendered">` element the GUI renders into.
+//   * the identical pulldown-cmark options the GUI uses,
+//   * the project's real `src/styles.css` (embedded at build time) followed by
+//     the user's `~/.config/monocle/custom.css` when it exists — the same two
+//     stylesheets, in the same order, that the viewer loads (styles.css via
+//     <link>, custom.css appended to <head> by `loadCustomCss` in
+//     src/main.js), and
+//   * the same `<article class="md-rendered">` element the GUI renders into.
 //
 // The output is then handed to a headless browser to make the PDF
 // (see ../bin/monocle-render). Two PDF-specific additions are made here, both
@@ -14,22 +18,43 @@
 //     document links open the sibling PDFs.
 //
 // FIDELITY NOTE: the pulldown-cmark options below MUST stay in sync with
-// `monocle_lib::render_to_html` (src-tauri/src/lib.rs). That, plus the shared
-// styles.css, is what makes the PDF look like the viewer.
+// `monocle_lib::render_to_html`, and `custom_css_path` with
+// `monocle_lib::custom_css_path` (both src-tauri/src/lib.rs). Those, plus the
+// shared styles.css, are what make the PDF look like the viewer.
 
 use pulldown_cmark::{html, Options, Parser};
 use std::env;
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
 const EMBEDDED_CSS: &str = include_str!("../src/styles.css");
+
+/// Where the user's optional overlay stylesheet lives.
+///
+/// FIDELITY NOTE: must resolve to exactly the same path as
+/// `monocle_lib::custom_css_path` (src-tauri/src/lib.rs) — if the viewer and
+/// the PDF ever disagreed about this location, a document could look correct on
+/// screen and export with different styling. Same crate, same fallback.
+fn custom_css_path() -> PathBuf {
+    dirs::home_dir()
+        .unwrap_or_else(|| PathBuf::from("."))
+        .join(".config")
+        .join("monocle")
+        .join("custom.css")
+}
+
+include!("../shared/frontmatter.rs");
 
 /// Markdown -> body HTML, using the exact options Monocle's viewer uses.
 fn render_body(md: &str) -> String {
     let mut options = Options::empty();
     options.insert(Options::ENABLE_TABLES);
     options.insert(Options::ENABLE_STRIKETHROUGH);
+    // Front matter is metadata, not content: push_html treats a metadata block
+    // as non-writing, so enabling this both strips the `---` block from the
+    // output and lets `doc_css` read the `css:` key out of it.
+    options.insert(Options::ENABLE_YAML_STYLE_METADATA_BLOCKS);
     let parser = Parser::new_ext(md, options);
     let mut out = String::new();
     html::push_html(&mut out, parser);
@@ -125,9 +150,23 @@ fn main() -> ExitCode {
     let args: Vec<String> = env::args().collect();
     if args.len() < 3 {
         eprintln!("usage: render_html <input.md> <output.html> [--link-dir DIR] [--css FILE]");
-        eprintln!("  --link-dir DIR  directory the rendered PDFs live in; markdown");
-        eprintln!("                  cross-links are pointed there (default: beside source).");
-        eprintln!("  --css FILE      stylesheet to use (default: embedded src/styles.css).");
+        eprintln!("                   [--custom-css FILE | --no-custom-css] [--no-doc-css]");
+        eprintln!("  --link-dir DIR     directory the rendered PDFs live in; markdown");
+        eprintln!("                     cross-links are pointed there (default: beside source).");
+        eprintln!("  --css FILE         REPLACE the base stylesheet (default: embedded");
+        eprintln!("                     src/styles.css).");
+        eprintln!("  --custom-css FILE  OVERLAY this stylesheet on top of the base, the way");
+        eprintln!("                     the viewer layers ~/.config/monocle/custom.css.");
+        eprintln!("  --no-custom-css    skip the default ~/.config/monocle/custom.css overlay.");
+        eprintln!("  --no-doc-css       ignore the `css:` key in the document's front matter.");
+        eprintln!();
+        eprintln!("Stylesheets cascade least- to most-specific:");
+        eprintln!("  1. src/styles.css            built in, or --css FILE");
+        eprintln!("  2. ~/.config/monocle/custom.css   your machine; or --custom-css FILE");
+        eprintln!("  3. the document's front-matter `css:`   ships with the document");
+        eprintln!("--css suppresses layer 2 by default (it means \"I control the stylesheet\");");
+        eprintln!("pass --custom-css alongside it to opt back in. --no-custom-css drops layer 2,");
+        eprintln!("--no-doc-css drops layer 3; pass both for stock styling.");
         return ExitCode::from(2);
     }
     let md_path = &args[1];
@@ -135,6 +174,9 @@ fn main() -> ExitCode {
 
     let mut link_dir: Option<String> = None;
     let mut css_path: Option<String> = None;
+    let mut custom_css_arg: Option<String> = None;
+    let mut no_custom_css = false;
+    let mut no_doc_css = false;
     let mut i = 3;
     while i < args.len() {
         match args[i].as_str() {
@@ -146,8 +188,19 @@ fn main() -> ExitCode {
                 Some(v) => { css_path = Some(v.clone()); i += 2; }
                 None => { eprintln!("render_html: --css needs a value"); return ExitCode::from(2); }
             },
+            "--custom-css" => match args.get(i + 1) {
+                Some(v) => { custom_css_arg = Some(v.clone()); i += 2; }
+                None => { eprintln!("render_html: --custom-css needs a value"); return ExitCode::from(2); }
+            },
+            "--no-custom-css" => { no_custom_css = true; i += 1; }
+            "--no-doc-css" => { no_doc_css = true; i += 1; }
             other => { eprintln!("render_html: unknown argument: {other}"); return ExitCode::from(2); }
         }
+    }
+
+    if no_custom_css && custom_css_arg.is_some() {
+        eprintln!("render_html: --custom-css and --no-custom-css are mutually exclusive");
+        return ExitCode::from(2);
     }
 
     let md = match fs::read_to_string(md_path) {
@@ -169,6 +222,48 @@ fn main() -> ExitCode {
         None => EMBEDDED_CSS.to_string(),
     };
 
+    // The user overlay, resolved in this order:
+    //   --no-custom-css   -> never any overlay
+    //   --custom-css FILE -> exactly that file; unreadable is an error, since it
+    //                        was asked for by name
+    //   --css FILE        -> no default overlay. `--css` means "I am supplying
+    //                        the stylesheet", and quietly appending a
+    //                        machine-local file on top would break the callers
+    //                        that rely on it being a full replacement.
+    //   (nothing)         -> ~/.config/monocle/custom.css when it exists
+    // Held as (path_for_logging, contents).
+    let custom_css: Option<(String, String)> = if no_custom_css {
+        None
+    } else if let Some(p) = &custom_css_arg {
+        match fs::read_to_string(p) {
+            Ok(s) => Some((p.clone(), s)),
+            Err(e) => {
+                eprintln!("render_html: cannot read custom css {p}: {e}");
+                return ExitCode::from(1);
+            }
+        }
+    } else if css_path.is_some() {
+        None
+    } else {
+        let p = custom_css_path();
+        match fs::read_to_string(&p) {
+            Ok(s) => Some((p.to_string_lossy().into_owned(), s)),
+            // An absent custom.css is the normal case, not a failure.
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => None,
+            Err(e) => {
+                eprintln!("render_html: ignoring unreadable {}: {e}", p.display());
+                None
+            }
+        }
+    };
+
+    // Say which stylesheets this PDF was built with — otherwise a machine-local
+    // custom.css silently changes the output and there is no way to tell.
+    eprintln!(
+        "[monocle-render] custom CSS: {}",
+        custom_css.as_ref().map_or("none", |(p, _)| p.as_str())
+    );
+
     // Absolute directory of the source, for <base> so relative links/images
     // resolve to the siblings of the .md file.
     let abs = match fs::canonicalize(md_path) {
@@ -178,6 +273,26 @@ fn main() -> ExitCode {
             return ExitCode::from(1);
         }
     };
+    // Third and last layer: the stylesheet this document itself names in its
+    // front matter. Resolved against the canonical document path so a relative
+    // `css:` follows the document rather than the working directory.
+    //
+    // Suppressed only by --no-doc-css, NOT by --no-custom-css: the user layer is
+    // machine-local state, whereas a document's own stylesheet ships with the
+    // document, so a render that honours it is still reproducible anywhere. The
+    // two flags each turn off exactly one layer.
+    let document_css: Option<(std::path::PathBuf, String)> = if no_doc_css {
+        None
+    } else {
+        doc_css(&abs, &md)
+    };
+    eprintln!(
+        "[monocle-render] document CSS: {}",
+        document_css
+            .as_ref()
+            .map_or("none".to_string(), |(p, _)| p.display().to_string())
+    );
+
     let dir = abs.parent().unwrap_or_else(|| Path::new("/"));
     let base_href = format!("file://{}/", encode_path_for_url(&dir.to_string_lossy()));
     let title = abs
@@ -187,9 +302,37 @@ fn main() -> ExitCode {
 
     let body = rewrite_md_links(&render_body(&md), link_dir.as_deref());
 
+    // Overlay <style> blocks, emitted only when there is something to apply.
+    let custom_style = match &custom_css {
+        Some((_, c)) => format!("<style>{c}</style>\n"),
+        None => String::new(),
+    };
+    let document_style = match &document_css {
+        Some((_, c)) => format!("<style>{c}</style>\n"),
+        None => String::new(),
+    };
+
     // The <article …> opening tag is kept byte-for-byte identical to the one
     // the GUI builds (src/index.html + main.js) so styles.css selectors apply,
     // and so tests/print/html_to_pdf.swift can still locate the content.
+    //
+    // CASCADE: base sheet, then the user's ~/.config overlay, then the sheet the
+    // document itself names — least specific to most, so a docs folder's house
+    // style wins over a personal tweak, which wins over the built-in defaults.
+    //
+    // ORDERING DECISION: the user overlay is emitted after the base sheet, which
+    // puts it after styles.css's `@media print` block, so an equal-specificity
+    // user rule wins over it. That is deliberate, for two reasons. First, it is
+    // exactly what the viewer does — main.js appends <style id="custom-css"> to
+    // <head> after the styles.css <link> — and if the order differed here, this
+    // tool and the viewer's own ⌘P would produce different PDFs from the same
+    // document, which is a worse failure than any override. Second, `@media`
+    // contributes no specificity, but the print rules that actually keep the
+    // page laid out correctly (hiding chrome, flattening #content, forcing the
+    // white page) are all `!important`, so a plain user rule cannot break them.
+    // What stays overridable is the discretionary half — orphans/widows, the
+    // `break-inside: avoid` hints and `.page-break` — which is precisely what
+    // someone hand-tuning their own print output should be able to change.
     let doc = format!(
         "<!doctype html>\n\
          <html lang=\"en\"><head>\n\
@@ -197,12 +340,16 @@ fn main() -> ExitCode {
          <base href=\"{base}\">\n\
          <title>{title}</title>\n\
          <style>{css}</style>\n\
+         {custom_style}\
+         {document_style}\
          </head><body>\n\
          <article id=\"content\" class=\"md-rendered\" style=\"display:block\">{body}</article>\n\
          </body></html>\n",
         base = base_href,
         title = title,
         css = css,
+        custom_style = custom_style,
+        document_style = document_style,
         body = body,
     );
 
@@ -261,6 +408,96 @@ mod tests {
         );
         // non-doc links are still untouched even with a link dir
         assert_eq!(rewrite_one("photo.png", Some("/out/pdf")), "photo.png");
+    }
+
+    /// Guards the FIDELITY NOTE on `custom_css_path`: the viewer looks in
+    /// `~/.config/monocle/custom.css` (monocle_lib::custom_css_path), and if
+    /// this drifted the PDF would silently pick up a different file, or none.
+    #[test]
+    fn custom_css_path_matches_the_viewer() {
+        let p = custom_css_path();
+        assert!(
+            p.ends_with(".config/monocle/custom.css"),
+            "unexpected custom css path: {}",
+            p.display()
+        );
+        assert!(p.is_absolute() || p.starts_with("."), "{}", p.display());
+        assert_eq!(p.parent().unwrap().file_name().unwrap(), "monocle");
+        assert_eq!(
+            p.parent().unwrap().parent().unwrap().file_name().unwrap(),
+            ".config"
+        );
+    }
+
+    // Front matter. These cover shared/frontmatter.rs, which is include!d by
+    // both this crate and src-tauri — so testing it here tests the viewer's copy
+    // too, because there is only one copy.
+
+    #[test]
+    fn reads_css_key_from_front_matter() {
+        assert_eq!(
+            front_matter_css("---\ntitle: X\ncss: ./house.css\n---\n\n# H\n").as_deref(),
+            Some("./house.css")
+        );
+        assert_eq!(
+            front_matter_css("---\r\ncss: a.css\r\n---\r\n").as_deref(),
+            Some("a.css")
+        );
+        // quoted, and with a trailing comment
+        assert_eq!(
+            front_matter_css("---\ncss: \"my sheet.css\"\n---\n").as_deref(),
+            Some("my sheet.css")
+        );
+        assert_eq!(
+            front_matter_css("---\ncss: a.css  # the house style\n---\n").as_deref(),
+            Some("a.css")
+        );
+    }
+
+    #[test]
+    fn ignores_css_that_is_not_top_level_front_matter() {
+        // no front matter at all
+        assert_eq!(front_matter_css("# H\n\ncss: a.css\n"), None);
+        // front matter without the key
+        assert_eq!(front_matter_css("---\ntitle: X\n---\n"), None);
+        // nested under another key
+        assert_eq!(front_matter_css("---\ntheme:\n  css: a.css\n---\n"), None);
+        // after the block has closed
+        assert_eq!(front_matter_css("---\ntitle: X\n---\ncss: a.css\n"), None);
+        // empty value
+        assert_eq!(front_matter_css("---\ncss:\n---\n"), None);
+        // a leading `---` with no closing fence is a thematic break, not metadata
+        assert_eq!(front_matter_css("---\n\nBody\n"), None);
+    }
+
+    #[test]
+    fn resolves_doc_css_against_the_document_not_the_cwd() {
+        let doc = Path::new("/docs/guide/a.md");
+        assert_eq!(
+            resolve_doc_css(doc, "./house.css").unwrap(),
+            Path::new("/docs/guide/./house.css")
+        );
+        assert_eq!(
+            resolve_doc_css(doc, "../shared/x.css").unwrap(),
+            Path::new("/docs/guide/../shared/x.css")
+        );
+        assert_eq!(
+            resolve_doc_css(doc, "/abs/x.css").unwrap(),
+            Path::new("/abs/x.css")
+        );
+        assert!(resolve_doc_css(doc, "~/x.css").unwrap().is_absolute());
+    }
+
+    /// A document names the stylesheet that gets inlined into the page, so it
+    /// must not be able to pull in an arbitrary file.
+    #[test]
+    fn refuses_doc_css_that_is_not_a_stylesheet() {
+        let doc = Path::new("/docs/a.md");
+        assert_eq!(resolve_doc_css(doc, "/etc/passwd"), None);
+        assert_eq!(resolve_doc_css(doc, "~/.ssh/id_rsa"), None);
+        assert_eq!(resolve_doc_css(doc, "../../secrets.env"), None);
+        // case-insensitive on the extension
+        assert!(resolve_doc_css(doc, "House.CSS").is_some());
     }
 
     #[test]

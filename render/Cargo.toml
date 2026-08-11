@@ -9,6 +9,8 @@ name = "render_html"
 path = "render_html.rs"
 
 [dependencies]
-# Keep this version aligned with src-tauri/Cargo.toml so the CLI and the GUI
-# parse markdown identically.
+# Keep these versions aligned with src-tauri/Cargo.toml so the CLI and the GUI
+# parse markdown identically and resolve ~/.config/monocle/custom.css to the
+# same path.
 pulldown-cmark = "0.12"
+dirs = "6"
