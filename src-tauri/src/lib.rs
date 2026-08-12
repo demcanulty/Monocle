@@ -155,7 +155,13 @@ fn watch_file(
     {
         if let (Some(name), Some(dir)) = (css.file_name(), css.parent()) {
             target_names.push(name.to_os_string());
-            if !watch_dirs.iter().any(|d| d == dir) {
+            // `dir.is_dir()` guard is load-bearing, not defensive tidiness. On
+            // macOS `notify` keeps ONE FSEvents stream and rebuilds it on every
+            // watch() call; a call that fails (a `css:` naming a directory that
+            // does not exist) tears down the stream for the paths already being
+            // watched, so the document itself silently stops live-reloading.
+            // Handling the Err after the fact is too late — never make the call.
+            if dir.is_dir() && !watch_dirs.iter().any(|d| d == dir) {
                 watch_dirs.push(dir.to_path_buf());
             }
         }
@@ -183,10 +189,21 @@ fn watch_file(
         })
         .map_err(|e| e.to_string())?;
 
-    for dir in &watch_dirs {
-        watcher
-            .watch(dir, RecursiveMode::NonRecursive)
-            .map_err(|e| e.to_string())?;
+    // The document's own directory is the whole point — a failure here is fatal.
+    watcher
+        .watch(&watch_dirs[0], RecursiveMode::NonRecursive)
+        .map_err(|e| e.to_string())?;
+
+    // Any additional directory belongs to the stylesheet the document names, and
+    // watching it is a convenience. It may not exist (a typo'd or not-yet-created
+    // `css:` path), may be unreadable, or may sit on an unmounted volume — none
+    // of which should stop the document itself from live-reloading. Propagating
+    // this error used to drop the whole watcher before it was ever stored, which
+    // silently killed live reload for the document too.
+    for dir in watch_dirs.iter().skip(1) {
+        if let Err(e) = watcher.watch(dir, RecursiveMode::NonRecursive) {
+            eprintln!("monocle: not watching {}: {e}", dir.display());
+        }
     }
 
     state.watchers.lock().unwrap().insert(label, watcher);
