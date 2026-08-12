@@ -94,6 +94,21 @@ npm run tauri build
 
 The built app is at `src-tauri/target/release/bundle/macos/Monocle.app`.
 
+### Development
+
+```
+npm run tauri dev
+```
+
+`tauri dev` serves `src/` over HTTP (via `build.devUrl` and the `dev:serve`
+script), so editing JS/CSS only needs a page refresh — no Rust rebuild.
+
+One consequence: because a debug build resolves the frontend from `devUrl`,
+running `src-tauri/target/debug/monocle` **directly** shows a blank window
+unless the dev server is already up. Either use `npm run tauri dev`, or start
+`npm run dev:serve` first. Release builds are unaffected — they embed
+`frontendDist`.
+
 ## Stack
 
 - **Backend**: Rust — file I/O, markdown parsing ([pulldown-cmark](https://crates.io/crates/pulldown-cmark)), file watching ([notify](https://crates.io/crates/notify))
